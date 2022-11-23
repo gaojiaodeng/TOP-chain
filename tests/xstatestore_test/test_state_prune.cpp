@@ -556,8 +556,6 @@ TEST_F(test_state_prune, mpt_prune_BENCH) {
     std::cout << "before prune.time:" << t1 << std::endl;
 #endif
 
-
-
     for (uint32_t l = 0; l < mpt_prune_num; l++) {
         // xinfo("mpt_prune_BENCH before prune mpt idx:%u,db_read:%u", l, db_read_now - db_read_last);
         last_keep_mpt->prune(mpt_root_vec[l], ec);
