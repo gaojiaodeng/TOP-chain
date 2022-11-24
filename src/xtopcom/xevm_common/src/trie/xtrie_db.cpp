@@ -173,6 +173,7 @@ void xtop_trie_db::Commit(xh256_t hash, AfterCommitCallback cb, std::error_code 
 
     // clean preimages:
     preimages_.clear();
+    // std::cout << "*****node cache size:" << cleans_.size();
 }
 
 void xtop_trie_db::commit(xh256_t hash, std::map<xbytes_t, xbytes_t> & data, AfterCommitCallback cb, std::error_code & ec) {
@@ -219,7 +220,7 @@ void xtop_trie_db::prune(xh256_t const & hash, std::error_code & ec) {
         return;
     }
 
-    cleans_.erase(hash);
+    // cleans_.erase(hash);
 
     assert(dirties_.find(hash) == dirties_.end());
 
@@ -234,6 +235,9 @@ void xtop_trie_db::commit_pruned(std::error_code & ec) {
 
     std::vector<xbytes_t> pruned_keys;
     pruned_keys.reserve(pruned_hashes_.size());
+    for (auto & hash : pruned_hashes_) {
+        cleans_.erase(hash); 
+    }
     std::transform(std::begin(pruned_hashes_), std::end(pruned_hashes_), std::back_inserter(pruned_keys), [](xh256_t const & hash) { return hash.to_bytes(); });
     diskdb_->DeleteBatch(pruned_keys, ec);
     if (ec) {

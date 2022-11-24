@@ -462,6 +462,7 @@ TEST_F(test_state_prune, prune_height) {
 }
 
 TEST_F(test_state_prune, mpt_prune_BENCH) {
+    xset_log_level(enum_xlog_level_error);
     std::string db_path = "test_db_mpt_prune_bench";
     char buffer[200];
     getcwd(buffer, 200);
@@ -473,7 +474,7 @@ TEST_F(test_state_prune, mpt_prune_BENCH) {
     auto xdbstore = base::xvchain_t::instance().get_xdbstore();
 
     uint32_t user_count = 10000;
-    uint32_t user_change_num_once = 50;
+    uint32_t user_change_num_once = 200; // change with pack tx num upper limit
     uint32_t mpt_all_num = 512;
     uint32_t mpt_prune_num = 256;
 
@@ -528,7 +529,7 @@ TEST_F(test_state_prune, mpt_prune_BENCH) {
         mpt_root_vec.push_back(base_mpt->get_root_hash(ec));
         // std::cout << "mpt get root:" << j+1 << std::endl;
         if (j%50 == 0) {
-            std::cout << "mpt commit:" << j  << "/" << mpt_all_num << std::endl;
+            std::cout << "mpt commit:" << j  << "/" << mpt_all_num << ", db write:" << XMETRICS_GAUGE_GET_VALUE(metrics::db_write) << std::endl;
         }
     }
 
@@ -551,7 +552,7 @@ TEST_F(test_state_prune, mpt_prune_BENCH) {
     uint32_t db_delete_range_before_prune = XMETRICS_GAUGE_GET_VALUE(metrics::db_delete_range);
     uint32_t db_delete_range_last = db_delete_range_before_prune;
     std::cout << "before prune. db_read " << db_read_last << ", db_write " << db_write_last << ", db_delete " << db_delete_last << ", db_delete_range " << db_delete_range_last
-            << "time:" << t1 << std::endl;
+            << ", time:" << t1 << std::endl;
 #else
     std::cout << "before prune.time:" << t1 << std::endl;
 #endif
