@@ -293,7 +293,7 @@ void xdb::xdb_impl::setup_default_db_options(rocksdb::Options & default_db_optio
     }
 
     //test max_open_files limit
-    default_db_options.max_open_files = 4000;
+    default_db_options.max_open_files = 500;
 
     return ;
 }
@@ -304,10 +304,11 @@ void xdb::xdb_impl::setup_default_cf_options(xColumnFamily & cf_config,const siz
     if((m_db_kinds & xdb_kind_no_compress) != 0)//performance most
         table_options.enable_index_compression = false;
     
-    if(block_size > 0)
-        table_options.block_size = block_size;
-    if(block_cache != nullptr)
-        table_options.block_cache = block_cache;
+    // if(block_size > 0)
+    //     table_options.block_size = block_size;
+    // if(block_cache != nullptr)
+    //     table_options.block_cache = block_cache;
+    table_options.no_block_cache = true;
     
 #ifdef DB_CACHE
     table_options.cache_index_and_filter_blocks = true;
