@@ -25,13 +25,13 @@
 #include <cinttypes>
 NS_BEG2(top, xunit_service)
 
-// #define MIN_TRANSACTION_NUM_FOR_HIGH_TPS (30)
-// #define MIN_TRANSACTION_NUM_FOR_MIDDLE_TPS (20)
-// #define MIN_TRANSACTION_NUM_FOR_LOW_TPS (10)
+#define MIN_TRANSACTION_NUM_FOR_HIGH_TPS (30)
+#define MIN_TRANSACTION_NUM_FOR_MIDDLE_TPS (20)
+#define MIN_TRANSACTION_NUM_FOR_LOW_TPS (10)
 
-#define MIN_TRANSACTION_NUM_FOR_HIGH_TPS (180)
-#define MIN_TRANSACTION_NUM_FOR_MIDDLE_TPS (100)
-#define MIN_TRANSACTION_NUM_FOR_LOW_TPS (50)
+// #define MIN_TRANSACTION_NUM_FOR_HIGH_TPS (180)
+// #define MIN_TRANSACTION_NUM_FOR_MIDDLE_TPS (100)
+// #define MIN_TRANSACTION_NUM_FOR_LOW_TPS (50)
 
 #define TRY_MAKE_BLOCK_TIMER_INTERVAL (50)
 #define TRY_HIGH_TPS_TIME_WINDOW (400)
@@ -532,17 +532,17 @@ bool xbatch_packer::verify_proposal_packet(const xvip2_t & from_addr, const xvip
 
 bool xbatch_packer::recv_in(const xvip2_t & from_addr, const xvip2_t & to_addr, const base::xcspdu_t & packet, int32_t cur_thread_id, uint64_t timenow_ms) {
     auto type = packet.get_msg_type();
-    bool forked = chain_fork::xutility_t::is_forked(fork_points::xbft_msg_upgrade, m_para->get_resources()->get_chain_timer()->logic_time());
-    if (forked && (type == xconsensus::enum_consensus_msg_type_proposal || type == xconsensus::enum_consensus_msg_type_sync_resp)) {
-        xwarn("xbatch_packer::recv_in drop old msg. pdu_recv_in=%s, clock=%llu, viewid=%llu, from_xip=%s,to_xip=%s,node_xip=%s.",
-              packet.dump().c_str(),
-              m_last_view_clock,
-              m_last_view_id,
-              xcons_utl::xip_to_hex(from_addr).c_str(),
-              xcons_utl::xip_to_hex(to_addr).c_str(),
-              xcons_utl::xip_to_hex(get_xip2_addr()).c_str());
-        return false;
-    }
+    // bool forked = chain_fork::xutility_t::is_forked(fork_points::xbft_msg_upgrade, m_para->get_resources()->get_chain_timer()->logic_time());
+    // if (forked && (type == xconsensus::enum_consensus_msg_type_proposal || type == xconsensus::enum_consensus_msg_type_sync_resp)) {
+    //     xwarn("xbatch_packer::recv_in drop old msg. pdu_recv_in=%s, clock=%llu, viewid=%llu, from_xip=%s,to_xip=%s,node_xip=%s.",
+    //           packet.dump().c_str(),
+    //           m_last_view_clock,
+    //           m_last_view_id,
+    //           xcons_utl::xip_to_hex(from_addr).c_str(),
+    //           xcons_utl::xip_to_hex(to_addr).c_str(),
+    //           xcons_utl::xip_to_hex(get_xip2_addr()).c_str());
+    //     return false;
+    // }
     
     xunit_info("xbatch_packer::recv_in, consensus_tableblock  pdu_recv_in=%s, clock=%llu, viewid=%llu, from_xip=%s,to_xip=%s,node_xip=%s.",
                 packet.dump().c_str(), m_last_view_clock, m_last_view_id, xcons_utl::xip_to_hex(from_addr).c_str(),xcons_utl::xip_to_hex(to_addr).c_str(),xcons_utl::xip_to_hex(get_xip2_addr()).c_str());
