@@ -145,6 +145,7 @@ void xtxpool_t::subscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t
         assert(m_roles[zone][i] != nullptr);
         if (m_roles[zone][i]->is_ids_match(zone, front_table_id, back_table_id, node_type)) {
             m_roles[zone][i]->add_sub_count();
+
             for (uint16_t id = front_table_id; id <= back_table_id; id++) {
                 m_tables_mgr.update_running_role_num(zone, id, true);
             }
