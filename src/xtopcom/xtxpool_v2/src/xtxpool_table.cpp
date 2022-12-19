@@ -492,6 +492,7 @@ void xtxpool_table_t::update_table_state(const data::xtablestate_ptr_t & table_s
 void xtxpool_table_t::add_role(xtxpool_role_info_t * role) {
     std::lock_guard<std::mutex> lck(m_mgr_mutex);
     m_xtable_info.add_role(role);
+    m_xtable_info.running_role_inc();
 }
 
 void xtxpool_table_t::remove_role(xtxpool_role_info_t * role) {
@@ -502,6 +503,20 @@ void xtxpool_table_t::remove_role(xtxpool_role_info_t * role) {
 bool xtxpool_table_t::no_role() const {
     std::lock_guard<std::mutex> lck(m_mgr_mutex);
     return m_xtable_info.no_role();
+}
+
+void xtxpool_table_t::update_running_role_num(bool is_inc) {
+    std::lock_guard<std::mutex> lck(m_mgr_mutex);
+    if (is_inc) {
+        m_xtable_info.running_role_inc();
+    } else {
+        m_xtable_info.running_role_dec();
+    }
+}
+
+bool xtxpool_table_t::is_running() const {
+    std::lock_guard<std::mutex> lck(m_mgr_mutex);
+    return m_xtable_info.is_running();
 }
 
 const std::vector<xtxpool_table_lacking_receipt_ids_t> xtxpool_table_t::get_lacking_recv_tx_ids(uint32_t & total_num) const {

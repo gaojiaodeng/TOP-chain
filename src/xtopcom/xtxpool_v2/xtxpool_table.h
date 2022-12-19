@@ -114,6 +114,8 @@ public:
     void add_role(xtxpool_role_info_t * shard);
     void remove_role(xtxpool_role_info_t * shard);
     bool no_role() const;
+    void update_running_role_num(bool is_inc);
+    bool is_running() const;
 
     const std::vector<xtxpool_table_lacking_receipt_ids_t> get_lacking_confirm_tx_ids(uint32_t & total_num) const;
     void build_recv_tx(base::xtable_shortid_t peer_table_sid, std::vector<uint64_t> receiptids, std::vector<xcons_transaction_ptr_t> & receipts);

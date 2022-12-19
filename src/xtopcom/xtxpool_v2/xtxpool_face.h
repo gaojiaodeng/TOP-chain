@@ -250,8 +250,9 @@ public:
     virtual void updata_latest_nonce(const std::string & account_addr, uint64_t latest_nonce) = 0;
     virtual void subscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) = 0;
     virtual void unsubscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) = 0;
+    virtual void fade_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) = 0;
     virtual void on_block_confirmed(xblock_t * block) = 0;
-    virtual bool on_block_confirmed(const std::string table_addr, base::enum_xvblock_class blk_class, uint64_t height) = 0;
+    virtual bool on_block_confirmed(const std::string & table_addr, base::enum_xvblock_class blk_class, uint64_t height) = 0;
     virtual int32_t verify_txs(const std::string & account, const std::vector<xcons_transaction_ptr_t> & txs) = 0;
     virtual void refresh_table(uint8_t zone, uint16_t subaddr) = 0;
     // virtual void update_non_ready_accounts(uint8_t zone, uint16_t subaddr) = 0;

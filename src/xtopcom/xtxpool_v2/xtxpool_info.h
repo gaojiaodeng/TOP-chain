@@ -588,6 +588,22 @@ public:
         return m_table_state_cache;
     }
 
+    void running_role_inc() {
+        m_running_role_counter++;
+    }
+
+    void running_role_dec() {
+        if (m_running_role_counter <= 0) {
+            xassert(false);
+            return;
+        }
+        m_running_role_counter--;
+    }
+
+    bool is_running() const {
+        return m_running_role_counter > 0;
+    }
+
 private:
     std::vector<xtxpool_role_info_t *> m_roles;
     xtx_counter_t m_counter{};
@@ -595,6 +611,7 @@ private:
     xtable_state_cache_t * m_table_state_cache{nullptr};
     std::set<base::xtable_shortid_t> * m_all_table_sids{nullptr};
     std::set<base::xtable_shortid_t> m_empty{};
+    uint8_t m_running_role_counter{1};
 };
 
 }  // namespace xtxpool_v2

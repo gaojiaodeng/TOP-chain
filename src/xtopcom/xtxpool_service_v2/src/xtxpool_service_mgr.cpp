@@ -156,6 +156,12 @@ bool xtxpool_service_mgr::fade(const xvip2_t & xip) {
     xinfo("xtxpool_service_mgr::fade xip:%" PRIx64 ":%" PRIx64, xip.high_addr, xip.low_addr);
     std::shared_ptr<xtxpool_service_face> service = find(xip);
     if (service != nullptr) {
+        base::enum_xchain_zone_index zone_id;
+        uint32_t fount_table_id;
+        uint32_t back_table_id;
+        common::xnode_type_t node_type;
+        service->get_service_table_boundary(zone_id, fount_table_id, back_table_id, node_type);
+        m_para->get_txpool()->fade_tables(zone_id, fount_table_id, back_table_id, node_type);
         service->fade(xip);
         return true;
     }
@@ -236,7 +242,7 @@ void xtxpool_service_mgr::on_timer() {
                 }
             }
 
-            if (!service->is_unreged() && is_time_for_refresh_table) {
+            if (service->is_running() && is_time_for_refresh_table) {
                 base::enum_xchain_zone_index zone_id;
                 uint32_t fount_table_id;
                 uint32_t back_table_id;

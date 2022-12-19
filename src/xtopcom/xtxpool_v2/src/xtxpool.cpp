@@ -93,7 +93,7 @@ void xtxpool_t::print_statistic_values() const {
     XMETRICS_GAUGE_SET_VALUE(metrics::txpool_sender_unconfirm_cache, sender_cache_size);
     XMETRICS_GAUGE_SET_VALUE(metrics::txpool_receiver_unconfirm_cache, receiver_cache_size);
     XMETRICS_GAUGE_SET_VALUE(metrics::txpool_height_record_cache, height_record_size);
-    XMETRICS_GAUGE_SET_VALUE(metrics::txpool_table_unconfirm_raw_txs, height_record_size);
+    XMETRICS_GAUGE_SET_VALUE(metrics::txpool_table_unconfirm_raw_txs, unconfirm_raw_txs_size);
 }
 
 const xcons_transaction_ptr_t xtxpool_t::pop_tx(const tx_info_t & txinfo) {
@@ -145,6 +145,9 @@ void xtxpool_t::subscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t
         assert(m_roles[zone][i] != nullptr);
         if (m_roles[zone][i]->is_ids_match(zone, front_table_id, back_table_id, node_type)) {
             m_roles[zone][i]->add_sub_count();
+            for (uint16_t id = front_table_id; id <= back_table_id; id++) {
+                m_tables_mgr.update_running_role_num(zone, id, true);
+            }
             return;
         }
     }
@@ -207,6 +210,28 @@ void xtxpool_t::unsubscribe_tables(uint8_t zone, uint16_t front_table_id, uint16
     m_statistic.dec_table_num(remove_table_num);
 }
 
+void xtxpool_t::fade_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) {
+    xtxpool_info("xtxpool_t::fade_tables zone:%d,front_table_id:%d,back_table_id:%d,node_type:%d", zone, front_table_id, back_table_id, node_type);
+    if (front_table_id > back_table_id) {
+        xerror("xtxpool_t::fade_tables table id invalidate front_table_id:%d back_table_id%d,node_type:%d", front_table_id, back_table_id, node_type);
+        return;
+    }
+    if (!table_zone_subaddr_check(zone, back_table_id)) {
+        return;
+    }
+    std::lock_guard<std::mutex> lck(m_mutex[zone]);
+    for (auto it = m_roles[zone].begin(); it != m_roles[zone].end(); it++) {
+        if ((*it)->is_ids_match(zone, front_table_id, back_table_id, node_type)) {
+            xtxpool_info("xtxpool_t::fade_tables fade tables zone:%d,front_table_id:%d,back_table_id:%d,node_type:%d", zone, front_table_id, back_table_id, node_type);
+            for (uint16_t i = front_table_id; i <= back_table_id; i++) {
+                m_tables_mgr.update_running_role_num(zone, i, false);
+            }
+            return;
+        }
+    }
+    xerror("xtxpool_t::fade_tables no role found.zone:%d,front_table_id:%d,back_table_id:%d,node_type:%d", zone, front_table_id, back_table_id, node_type);
+}
+
 void xtxpool_t::on_block_confirmed(xblock_t * block) {
     if (!block->is_tableblock() || block->is_genesis_block()) {
         return;
@@ -220,9 +245,13 @@ void xtxpool_t::on_block_confirmed(xblock_t * block) {
     table->on_block_confirmed(block);
 }
 
-bool xtxpool_t::on_block_confirmed(const std::string table_addr, base::enum_xvblock_class blk_class, uint64_t height) {
+bool xtxpool_t::on_block_confirmed(const std::string & table_addr, base::enum_xvblock_class blk_class, uint64_t height) {
     auto table = get_txpool_table_by_addr(table_addr);
     if (table == nullptr) {
+        return true;
+    }
+    if (!table->is_running()) {
+        xdbg("xtxpool_t::on_block_confirmed table:%s not running, not process commit block. height:%llu", table_addr.c_str(), height);
         return true;
     }
 
@@ -418,6 +447,15 @@ bool xtables_mgr::unsubscribe_table(uint8_t zone, uint16_t subaddr, xtxpool_role
         return true;
     }
     return false;
+}
+
+void xtables_mgr::update_running_role_num(uint8_t zone, uint16_t subaddr, bool is_inc) {
+    std::lock_guard<std::mutex> table_lck(m_tables[zone][subaddr]._table_mutex);
+    if (m_tables[zone][subaddr]._table == nullptr) {
+        xerror("xtables_mgr::fade_table table should not null.zone:%d,subaddr:%d", zone, subaddr);
+        return;
+    }
+    m_tables[zone][subaddr]._table->update_running_role_num(is_inc);
 }
 
 std::shared_ptr<xtxpool_table_t> xtables_mgr::get_table(uint8_t zone, uint16_t subaddr) const {

@@ -38,6 +38,7 @@ public:
                          xtxpool_statistic_t * statistic,
                          std::set<base::xtable_shortid_t> * all_sid_set);
     bool unsubscribe_table(uint8_t zone, uint16_t subaddr, xtxpool_role_info_t * role);
+    void update_running_role_num(uint8_t zone, uint16_t subaddr, bool is_inc);
     std::shared_ptr<xtxpool_table_t> get_table(uint8_t zone, uint16_t subaddr) const;
 public:
     mutable std::vector<xtable> m_tables[xtxpool_zone_type_max];
@@ -55,8 +56,9 @@ public:
     void updata_latest_nonce(const std::string & account_addr, uint64_t latest_nonce) override;
     void subscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) override;
     void unsubscribe_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) override;
+    void fade_tables(uint8_t zone, uint16_t front_table_id, uint16_t back_table_id, common::xnode_type_t node_type) override;
     void on_block_confirmed(xblock_t * block) override;
-    bool on_block_confirmed(const std::string table_addr, base::enum_xvblock_class blk_class, uint64_t height) override;
+    bool on_block_confirmed(const std::string & table_addr, base::enum_xvblock_class blk_class, uint64_t height) override;
     int32_t verify_txs(const std::string & account, const std::vector<xcons_transaction_ptr_t> & txs) override;
     void refresh_table(uint8_t zone, uint16_t subaddr) override;
     // void update_non_ready_accounts(uint8_t zone, uint16_t subaddr) override;
