@@ -53,7 +53,7 @@ namespace top
 
         xblockacct_t::~xblockacct_t()
         {
-            xinfo("xblockacct_t::destroy,account=%s objectid=% " PRId64 " ",
+            xdbg("xblockacct_t::destroy,account=%s objectid=% " PRId64 " ",
                   get_address().c_str(),
                   (int64_t)get_obj_id());
 
@@ -229,7 +229,7 @@ namespace top
             if(is_close() == false)
             {
                 xvblockplugin_t::close(force_async); //mark close status first
-                xkinfo("xblockacct_t::close,account=%s,objectid=% " PRId64 " and this=% " PRId64 "ptr",dump().c_str(),get_obj_id(),this);
+                xdbg("xblockacct_t::close,account=%s,objectid=% " PRId64 " and this=% " PRId64 "ptr",dump().c_str(),get_obj_id(),this);
 
                 //then clean all blocks at memory
                 close_blocks();
@@ -1329,7 +1329,7 @@ namespace top
                     write_index(final_cached_index); //save index then
                 }
 
-                xinfo("xblockacct_t::store_block,done for block,cache_size:%zu,new_raw_block=%s,dump=%s",m_all_blocks.size(), new_raw_block->dump().c_str(), dump().c_str());
+                xinfo("xblockacct_t::store_block,done for block, tps_key cache_size:%zu,new_raw_block=%s,dump=%s",m_all_blocks.size(), new_raw_block->dump().c_str(), dump().c_str());
                 
                 //update meta right now
                 if(new_raw_block->get_height() != 0)//genesis block might be created by load_index
@@ -2623,7 +2623,7 @@ namespace top
             }
 
             update_bindex_to_committed(exist_cert.get());
-            xinfo("xunitbkplugin::try_update_account_index succ:account:%s,height:%llu,view:%llu", get_address().c_str(), height, viewid);
+            xdbg("xunitbkplugin::try_update_account_index succ:account:%s,height:%llu,view:%llu", get_address().c_str(), height, viewid);
             return ret;
         }
 

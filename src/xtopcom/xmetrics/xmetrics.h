@@ -601,6 +601,7 @@ enum E_SIMPLE_METRICS_TAG : size_t {
     state_delete_mpt,
     state_delete_by_full_table,
     state_delete_create_mpt_fail,
+    statestore_repeat_write_states,
 
     // data structure
     data_table_unpack_units,
@@ -678,6 +679,7 @@ enum E_SIMPLE_METRICS_TAG : size_t {
 
     //cpu
     cpu_hash_256_calc,
+    cpu_hash_256_keccak_calc,
     cpu_hash_64_calc,
     cpu_ca_merge_sign_xbft,
     cpu_ca_merge_sign_tc,

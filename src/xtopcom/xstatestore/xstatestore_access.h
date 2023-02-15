@@ -19,7 +19,7 @@ protected:
     enum
     {
         enum_max_table_state_lru_cache_max     = 4, //max table state lru cache count
-        enum_max_unit_state_lru_cache_max      = 32, //max unit state lru cache count
+        enum_max_unit_state_lru_cache_max      = 50000, //max unit state lru cache count
     };
 public:
     xstatestore_cache_t();
@@ -46,6 +46,8 @@ class xstatestore_dbaccess_t {
  public:
     void    write_table_bstate(common::xtable_address_t const& address, data::xtablestate_ptr_t const& tablestate, const std::string & block_hash, std::error_code & ec) const;
     void    write_unit_bstate(data::xunitstate_ptr_t const& unitstate, const std::string & block_hash, std::error_code & ec) const;
+    void    unit_bstate_to_kv(data::xunitstate_ptr_t const& unitstate, const std::string & block_hash, std::map<std::string, std::string> & batch_kvs, std::error_code & ec) const;
+    void    batch_write_unit_bstate(const std::map<std::string, std::string> & batch_kvs, std::error_code & ec) const;
 
  public:
     data::xtablestate_ptr_t     read_table_bstate(common::xtable_address_t const& address, uint64_t height, const std::string & block_hash) const;
@@ -72,6 +74,8 @@ public:
     void    write_table_bstate_to_cache(common::xtable_address_t const& address, uint64_t height, std::string const& block_hash, xtablestate_ext_ptr_t const& state, bool is_commit);
     void    write_unitstate_to_db(data::xunitstate_ptr_t const& unitstate, const std::string & block_hash, std::error_code & ec);
     void    write_unitstate_to_cache(data::xunitstate_ptr_t const& unitstate, const std::string & block_hash);
+    void    unit_bstate_to_kv(data::xunitstate_ptr_t const& unitstate, const std::string & block_hash, std::map<std::string, std::string> & batch_kvs, std::error_code & ec) const;
+    void    batch_write_unit_bstate(const std::map<std::string, std::string> & batch_kvs, std::error_code & ec) const;
 private:
     xtablestate_ext_ptr_t read_table_bstate_from_db_inner(common::xtable_address_t const& address, base::xvblock_t* block, bool bstate_must) const;
 private:

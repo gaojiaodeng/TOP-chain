@@ -81,7 +81,7 @@ base::xvblock_ptr_t  xunitbuilder_t::make_block_v2(const data::xunitstate_ptr_t 
     bodypara.set_binlog(binlog);
     bodypara.set_fullstate_bin(snapshot);
     base::xvblock_ptr_t proposal_block = create_unit(unitstate->account_address().to_string(), unitstate->height(), unitstate->get_bstate()->get_last_block_hash(), bodypara, cs_para);
-    xinfo("xunitbuilder_t::make_block unit=%s,binlog=%zu,snapshot=%zu,records=%zu", 
+    xdbg("xunitbuilder_t::make_block unit=%s,binlog=%zu,snapshot=%zu,records=%zu", 
         proposal_block->dump().c_str(), binlog.size(), snapshot.size(), unitstate->get_canvas_records_size());
     return proposal_block;
 }
@@ -156,7 +156,7 @@ void     xtablebuilder_t::make_table_block_para(const data::xtablestate_ptr_t & 
 }
 
 data::xblock_ptr_t  xtablebuilder_t::make_light_block(const data::xblock_ptr_t & prev_block, const data::xblock_consensus_para_t & cs_para, data::xtable_block_para_t const& lighttable_para) {
-    XMETRICS_TIME_RECORD("cons_build_light_table_cost");
+    XMETRICS_TIME_RECORD("tps_make_light_block");
     std::shared_ptr<base::xvblockmaker_t> vbmaker = std::make_shared<data::xtable_build2_t>(prev_block.get(), lighttable_para, cs_para);
     auto _new_block = vbmaker->build_new_block();
     data::xblock_ptr_t proposal_block = data::xblock_t::raw_vblock_to_object_ptr(_new_block.get());

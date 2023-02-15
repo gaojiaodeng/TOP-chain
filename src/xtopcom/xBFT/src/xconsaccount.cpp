@@ -69,6 +69,10 @@ namespace top
             return true;
         }
 
+        bool    xcsaccount_t::proc_preproposal(const xvip2_t & leader_xip,  uint64_t height, uint64_t viewid, uint64_t clock, uint32_t viewtoken, const std::string & msgdata) {
+            return true;
+        }
+
         //clock block always pass by higher layer to lower layer
         bool  xcsaccount_t::on_clock_fire(const base::xvevent_t & event,xcsobject_t* from_parent,const int32_t cur_thread_id,const uint64_t timenow_ms)
         {
@@ -198,7 +202,7 @@ namespace top
                 _batch_blocks[1] = _latest_lock_block;
                 //stored larger height block first for commit prove
                 //get_vblockstore()->store_blocks(*this,_batch_blocks);//save to blockstore
-                XMETRICS_TIME_RECORD("cons_store_block_cost");
+                XMETRICS_TIME_RECORD("tps_store_block");
                 get_vblockstore()->store_block(*this,_target_cert_block); //just store cert only
                 xdbg("xcsaccount_t::on_proposal_finish _target_cert_block:%s", _target_cert_block->dump().c_str());
             }

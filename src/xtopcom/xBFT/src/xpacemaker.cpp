@@ -208,7 +208,7 @@ namespace top
             return true;
         }
 
-        bool    xclockcert_view::update_vblock_cert(base::xvblock_t * hqc_block)
+        bool    xclockcert_view::update_vblock_cert(base::xvblock_t * hqc_block, bool directly_call)
         {
             if(NULL == hqc_block)
                 return false;
@@ -224,10 +224,10 @@ namespace top
                 return false;
 
             xinfo("xclockcert_view::update_vblock_cert %s",hqc_block->dump().c_str());
-            return update_vblock_cert(hqc_block->get_cert());
+            return update_vblock_cert(hqc_block->get_cert(), directly_call);
         }
 
-        bool    xclockcert_view::update_vblock_cert(base::xvqcert_t * hqc_cert)
+        bool    xclockcert_view::update_vblock_cert(base::xvqcert_t * hqc_cert, bool directly_call)
         {
             if(safe_check_vblock_cert(hqc_cert))
             {
@@ -242,13 +242,13 @@ namespace top
                     old_ptr->release_ref();
 
                 //now recalculate viewid
-                update_view();
+                update_view(directly_call);
                 return true;
             }
             return false;
         }
 
-        bool    xclockcert_view::update_view()
+        bool    xclockcert_view::update_view(bool directly_call)
         {
             if( (NULL == m_latest_vblock_cert) || (NULL == m_latest_clock_cert) )
                 return false;
@@ -267,7 +267,7 @@ namespace top
             }
             if(new_view_id > m_latest_view_id)
             {
-                xkinfo("xclockcert_view::update_view,at node=0x%llx, account %s old viewid=%llu --> new_view_id=%llu =  cert'view=%llu + 1 + {clock:%llu - %llu}",
+                xkinfo("xclockcert_view::update_view,tps_key at node=0x%llx, account %s old viewid=%llu --> new_view_id=%llu =  cert'view=%llu + 1 + {clock:%llu - %llu}",
                        get_xip2_addr().low_addr,
                        get_address().c_str(),
                        m_latest_view_id,
@@ -282,7 +282,11 @@ namespace top
                 std::function<void(void*)> _aysn_update_view = [this,new_view_id,clock_height_from_latest_clock](void*)->void{
                     fire_view(get_account(), new_view_id, clock_height_from_latest_clock, get_thread_id(), get_time_now());
                 };
-                send_call(_aysn_update_view,(void*)NULL);
+                // if (directly_call) {
+                    dispatch_call(_aysn_update_view,(void*)NULL);
+                // } else {
+                //     send_call(_aysn_update_view,(void*)NULL);
+                // }
                 return true;
             }
             return false;
@@ -344,8 +348,9 @@ namespace top
                     update_clock_cert(_packet_xclock_cert);
 
                 base::xvqcert_t*   _packet_vblock_cert = _evt_obj->get_vblock_cert();
-                if( (_packet_vblock_cert != NULL) && (_packet_vblock_cert->check_unit_flag(base::enum_xvblock_flag_authenticated)) )
+                if( (_packet_vblock_cert != NULL) && (_packet_vblock_cert->check_unit_flag(base::enum_xvblock_flag_authenticated)) ) {
                     update_vblock_cert(_packet_vblock_cert);
+                }
 
                 if(get_child_node() != NULL) //next layer still there
                 {
@@ -560,13 +565,30 @@ namespace top
         }
 
         //call from lower layer to higher layer(parent)
-        bool  xclockcert_view::on_proposal_finish(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms)
+        // bool  xclockcert_view::on_proposal_finish(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms)
+        // {
+        //     xproposal_finish* _evt_obj = (xproposal_finish*)&event;
+        //     //try all of them,and pick highest one
+        //     xdbg("xclockcert_view::on_proposal_finish _evt_obj->get_latest_cert()");
+        //     if(_evt_obj->get_error_code() == enum_xconsensus_code_successful)
+        //     {
+        //         update_vblock_cert(_evt_obj->get_target_proposal());
+        //     }
+        //     update_vblock_cert(_evt_obj->get_latest_cert());
+        //     update_vblock_cert(_evt_obj->get_latest_lock());
+        //     update_vblock_cert(_evt_obj->get_latest_commit());
+
+        //     return false; //let upper layer continue get notified
+        // }
+        
+        //call from lower layer to higher layer(parent)
+        bool  xclockcert_view::on_update_view(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms)
         {
             xproposal_finish* _evt_obj = (xproposal_finish*)&event;
             //try all of them,and pick highest one
             if(_evt_obj->get_error_code() == enum_xconsensus_code_successful)
             {
-                update_vblock_cert(_evt_obj->get_target_proposal());
+                update_vblock_cert(_evt_obj->get_target_proposal(), true);
             }
             update_vblock_cert(_evt_obj->get_latest_cert());
             update_vblock_cert(_evt_obj->get_latest_lock());
