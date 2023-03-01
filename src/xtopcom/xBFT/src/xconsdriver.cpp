@@ -1255,13 +1255,14 @@ namespace top
                 delete pair_item; //release holded resource as well
             };
 
-            if(paired_cert != nullptr) //manually add reference for _verify_function call
-                paired_cert->add_ref();
-            auto _verify_function = [this,paired_cert](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
+            // if(paired_cert != nullptr) //manually add reference for _verify_function call
+                // paired_cert->add_ref();
+            // auto _verify_function = [this,paired_cert](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
                 base::xauto_ptr<base::xvqcert_t> _merge_cert(paired_cert);//auto release the added addtional once quit
                 if(is_close() == false)
                 {
-                    base::xvblock_t* _for_check_block_ = (base::xvblock_t *)call.get_param1().get_object();
+                    // base::xvblock_t* _for_check_block_ = (base::xvblock_t *)call.get_param1().get_object();
+                    base::xvblock_t* _for_check_block_ = target_block;
                     if (_for_check_block_->check_block_flag(base::enum_xvblock_flag_authenticated)) {
                         xinfo("xBFTdriver_t::fire_verify_commit_job,successful already is cert block. block:%s at node=0x%llx",_for_check_block_->dump().c_str(),get_xip2_addr().low_addr);
                         return true;
@@ -1276,25 +1277,26 @@ namespace top
                         }
                         xinfo("xBFTdriver_t::fire_verify_commit_job,successful finish verify for commit block:%s at node=0x%llx",_for_check_block_->dump().c_str(),get_xip2_addr().low_addr);
 
-                        base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
-                        if(_callback_ != NULL)
-                        {
+                        // base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
+                        // if(_callback_ != NULL)
+                        // {
                             block_cert_pair * pair_data = new block_cert_pair(_for_check_block_,_merge_cert.get());
-                            dispatch_call(*_callback_,(void*)pair_data);//pair_data may release later by _callback_
-                        }
+                        //     dispatch_call(*_callback_,(void*)pair_data);//pair_data may release later by _callback_
+                        // }
+                        _after_verify_commit_job(pair_data);
                     }
                     else
                         xerror("xBFTdriver_t::fire_verify_commit_job,fail-verify_muti_sign for block=%s,at node=0x%llx",_for_check_block_->dump().c_str(),get_xip2_low_addr());
                 }
                 return true;
-            };
-            base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)target_block,&_after_verify_commit_job,(base::xobject_t*)this);
-            asyn_verify_call.bind_taskid(get_account_index());
-            base::xworkerpool_t * _workers_pool = get_workerpool();
-            if(_workers_pool != NULL)
-                return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
-            else
-                return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
+            // };
+            // base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)target_block,&_after_verify_commit_job,(base::xobject_t*)this);
+            // asyn_verify_call.bind_taskid(get_account_index());
+            // base::xworkerpool_t * _workers_pool = get_workerpool();
+            // if(_workers_pool != NULL)
+            //     return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
+            // else
+            //     return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
         }
 
         bool xBFTdriver_t::fire_verify_vote_job(const xvip2_t replica_xip,base::xvqcert_t*replica_cert,xproposal_t * local_proposal,base::xfunction_t &callback, const std::string & vote_extend_data)
@@ -1302,12 +1304,13 @@ namespace top
             if( (NULL == replica_cert) || (NULL == local_proposal) )
                 return false;
 
-            replica_cert->add_ref();
-            auto _verify_function = [this,replica_xip,replica_cert, vote_extend_data](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
+            // replica_cert->add_ref();
+            // auto _verify_function = [this,replica_xip,replica_cert, vote_extend_data](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
                 base::xauto_ptr<base::xvqcert_t> _dummy_release(replica_cert);//auto release the added addtional once quit
                 if(is_close() == false)//running at a specific worker thread of pool
                 {
-                    xproposal_t * _proposal = (xproposal_t *)call.get_param1().get_object();
+                    // xproposal_t * _proposal = (xproposal_t *)call.get_param1().get_object();
+                    xproposal_t * _proposal = local_proposal;
                     if(_proposal->is_vote_disable()) //quick path to exit while proposal has been disabled
                     {
                         xwarn("xBFTdriver_t::fire_verify_vote_job,had disabled proposal=%s,at node=0x%llx",_proposal->dump().c_str(),replica_xip.low_addr);
@@ -1354,12 +1357,13 @@ namespace top
                                         //--------------after below line, block not allow do any change  anymore------------
                                         xinfo("xBFTdriver_t::fire_verify_vote_job,successful collect enough vote and verified for _proposal=%s,at node=0x%llx",_proposal->dump().c_str(),get_xip2_low_addr());
 
-                                        base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
-                                        if(_callback_ != NULL)
-                                        {
-                                            _proposal->add_ref(); //hold for async call
-                                            dispatch_call(*_callback_,(void*)_proposal);//send callback to engine'own thread
-                                        }
+                                        // base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
+                                        // if(_callback_ != NULL)
+                                        // {
+                                        //     _proposal->add_ref(); //hold for async call
+                                        //     dispatch_call(*_callback_,(void*)_proposal);//send callback to engine'own thread
+                                        // }
+                                        callback((void*)_proposal);
                                     }
                                     else
                                         xerror("xBFTdriver_t::fire_verify_vote_job,fail-verify_muti_sign for _proposal=%s,at node=0x%llx",_proposal->dump().c_str(),get_xip2_low_addr());
@@ -1375,15 +1379,15 @@ namespace top
                     }
                 }
                 return true;
-            };
+            // };
 
-            base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)local_proposal,&callback,(base::xobject_t*)this);
-            asyn_verify_call.bind_taskid(get_account_index());
-            base::xworkerpool_t * _workers_pool = get_workerpool();
-            if(_workers_pool != NULL)
-                return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
-            else
-                return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
+            // base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)local_proposal,&callback,(base::xobject_t*)this);
+            // asyn_verify_call.bind_taskid(get_account_index());
+            // base::xworkerpool_t * _workers_pool = get_workerpool();
+            // if(_workers_pool != NULL)
+            //     return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
+            // else
+                // return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
         }
 
         bool xBFTdriver_t::fire_verify_proposal_job(const xvip2_t leader_xip,const xvip2_t replica_xip,xproposal_t * target_proposal,base::xfunction_t &callback)
@@ -1392,10 +1396,11 @@ namespace top
                 return false;
 
             //now safe to do heavy job to verify quorum_ceritification completely
-            auto _verify_function = [this,leader_xip,replica_xip](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
+            // auto _verify_function = [this,leader_xip,replica_xip](base::xcall_t & call, const int32_t cur_thread_id,const uint64_t timenow_ms)->bool{
                 if(is_close() == false)//running at a specific worker thread of pool
                 {
-                    xproposal_t * _proposal = (xproposal_t *)call.get_param1().get_object();
+                    // xproposal_t * _proposal = (xproposal_t *)call.get_param1().get_object();
+                    xproposal_t * _proposal = target_proposal;
                     if(_proposal->is_vote_disable()) //quick path to exit while proposal has been disabled
                     {
                         xwarn("xBFTdriver_t::fire_verify_proposal_job,had disabled proposal=%s,at node=0x%llx",_proposal->dump().c_str(),replica_xip.low_addr);
@@ -1464,12 +1469,13 @@ namespace top
                         {
                             xwarn("xBFTdriver_t::fire_verify_proposal_job,fail-verify_proposal for _proposal:%s,at node=0x%llx",_proposal->dump().c_str(),replica_xip.low_addr);
                         }
-                        base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
-                        if(_callback_ != NULL)
-                        {
-                            _proposal->add_ref(); //hold for asyn call
-                            dispatch_call(*_callback_,(void*)_proposal);//send callback to engine'own thread
-                        }
+                        // base::xfunction_t* _callback_ = (base::xfunction_t *)call.get_param2().get_function();
+                        // if(_callback_ != NULL)
+                        // {
+                        //     _proposal->add_ref(); //hold for asyn call
+                        //     dispatch_call(*_callback_,(void*)_proposal);//send callback to engine'own thread
+                        // }
+                        callback((void*)_proposal);
                     }
                     else
                     {
@@ -1477,15 +1483,15 @@ namespace top
                     }
                 }
                 return true;
-            };
+            // };
 
-            base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)target_proposal,&callback,(base::xobject_t*)this);
-            asyn_verify_call.bind_taskid(get_account_index());
-            base::xworkerpool_t * _workers_pool = get_workerpool();
-            if(_workers_pool != NULL)
-                return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
-            else
-                return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
+            // base::xcall_t asyn_verify_call(_verify_function,(base::xobject_t*)target_proposal,&callback,(base::xobject_t*)this);
+            // asyn_verify_call.bind_taskid(get_account_index());
+            // base::xworkerpool_t * _workers_pool = get_workerpool();
+            // if(_workers_pool != NULL)
+            //     return (_workers_pool->send_call(asyn_verify_call) == enum_xcode_successful);
+            // else
+            //     return (dispatch_call(asyn_verify_call) == enum_xcode_successful);
         }
 
         bool  xBFTdriver_t::on_proposal_msg_recv(const xvip2_t & from_addr,const xvip2_t & to_addr,xcspdu_fire * event_obj,int32_t cur_thread_id,uint64_t timenow_ms,xcsobject_t * _parent)
