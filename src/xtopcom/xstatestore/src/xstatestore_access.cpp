@@ -9,117 +9,28 @@
 
 NS_BEG2(top, statestore)
 
-xcontract_unitstates_t::xcontract_unitstates_t(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) {
-    std::map<std::string, xobject_ptr_t<base::xvbstate_t>> unitstate_map;
-    unitstate_map[block_hash] = unitstate->get_bstate();
-    m_uintstates[unitstate->get_bstate()->get_block_height()] = unitstate_map;
-}
+xstatestore_cache_t::xstatestore_cache_t() : m_unitstate_cache(enum_max_unit_state_lru_cache_max) {
 
-data::xunitstate_ptr_t xcontract_unitstates_t::get_unitstate(uint64_t height, std::string const& block_hash) const {
-    auto it = m_uintstates.find(height);
-    if (it == m_uintstates.end()) {
-        return nullptr;
-    }
-    auto it_inner = it->second.find(block_hash);
-    if (it_inner == it->second.end()) {
-        return nullptr;
-    }
-    data::xunitstate_ptr_t unitstate = std::make_shared<data::xunit_bstate_t>(it_inner->second.get());
-    return unitstate;
-}
-
-void xcontract_unitstates_t::set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) {
-    auto height = unitstate->get_bstate()->get_block_height();
-    auto it = m_uintstates.find(height);
-    if (it == m_uintstates.end()) {
-        std::map<std::string, xobject_ptr_t<base::xvbstate_t>> unitstate_map;
-        unitstate_map[block_hash] = unitstate->get_bstate();
-        m_uintstates[height] = unitstate_map;
-        if (m_uintstates.size() > enum_keep_num) {
-            m_uintstates.erase(m_uintstates.begin());
-        }
-        return;
-    }
-
-    auto it_inner = it->second.find(block_hash);
-    if (it_inner == it->second.end()) {
-        it->second[block_hash] = unitstate->get_bstate();
-    }
-}
-
-data::xunitstate_ptr_t xunitstate_cache_contract_t::get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const {
-    auto it = m_account_uintstates_map.find(account);
-    if (it == m_account_uintstates_map.end()) {
-        return nullptr;
-    }
-    return it->second.get_unitstate(height, block_hash);
-}
-
-void xunitstate_cache_contract_t::set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) {
-    auto & account = unitstate->get_bstate()->get_address();
-    auto it = m_account_uintstates_map.find(account);
-    if (it == m_account_uintstates_map.end()) {
-        m_account_uintstates_map.insert(std::make_pair(account, xcontract_unitstates_t(block_hash, unitstate)));
-        return;
-    }
-    it->second.set_unitstate(block_hash, unitstate);
-}
-
-xunitstate_cache_normal_t::xunitstate_cache_normal_t(size_t lru_size) : m_unitstate_lru(lru_size) {
-}
-
-data::xunitstate_ptr_t xunitstate_cache_normal_t::get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const {
-    std::pair<std::string, xobject_ptr_t<base::xvbstate_t>> hash_unitstate;
-    auto ret = m_unitstate_lru.get(account, hash_unitstate);
-    if (!ret || hash_unitstate.first != block_hash) {
-        return nullptr;
-    }
-    assert(hash_unitstate.second != nullptr);
-    data::xunitstate_ptr_t unitstate = std::make_shared<data::xunit_bstate_t>(hash_unitstate.second.get());
-    return unitstate;
-}
-
-void xunitstate_cache_normal_t::set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) {
-    auto & account = unitstate->get_bstate()->get_address();
-    std::pair<std::string, xobject_ptr_t<base::xvbstate_t>> hash_unitstate;
-    auto ret = m_unitstate_lru.get(account, hash_unitstate);
-    if (ret) {
-        if (unitstate->get_bstate()->get_block_height() < hash_unitstate.second->get_block_height() || block_hash == hash_unitstate.first) {
-            return;
-        }
-    }
-    m_unitstate_lru.put(unitstate->get_bstate()->get_address(), std::make_pair(block_hash, unitstate->get_bstate()));
-}
-
-xstatestore_cache_t::xstatestore_cache_t(base::enum_xchain_zone_index zone_idx) {
-    if (zone_idx == base::enum_chain_zone_beacon_index || base::enum_chain_zone_zec_index) {
-        m_unitstate_cache = std::make_shared<xunitstate_cache_contract_t>();
-    } else {
-        m_unitstate_cache =
-            std::make_shared<xunitstate_cache_normal_t>((zone_idx == base::enum_chain_zone_evm_index) ? enum_max_unit_state_lru_cache_evm : enum_max_unit_state_lru_cache_normal);
-    }
 }
 
 xtablestate_ext_ptr_t const& xstatestore_cache_t::get_latest_connectted_tablestate() const {
     return m_latest_connectted_tablestate;
 }
 
-data::xunitstate_ptr_t xstatestore_cache_t::get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const {
-    std::lock_guard<std::mutex> lock(m_unitstates_cache_mutex);
-    auto unitstate = m_unitstate_cache->get_unitstate(account, height, block_hash);
-    XMETRICS_GAUGE(metrics::statestore_get_unit_state_from_cache, unitstate != nullptr ? 1 : 0);
-#ifdef DEBUG
-    if (unitstate != nullptr) {
-        xdbg("xstatestore_cache_t::get_unitstate succ hash=%s,state=%s", base::xstring_utl::to_hex(block_hash).c_str(), unitstate->get_bstate()->dump().c_str());
+data::xunitstate_ptr_t xstatestore_cache_t::get_unitstate(std::string const& block_hash) const {
+    xobject_ptr_t<base::xvbstate_t> bstate = nullptr;
+    m_unitstate_cache.get(block_hash, bstate);
+    XMETRICS_GAUGE(metrics::statestore_get_unit_state_from_cache, bstate != nullptr ? 1 : 0);
+    if (bstate == nullptr) {
+        return nullptr;
     }
-#endif
+    data::xunitstate_ptr_t unitstate = std::make_shared<data::xunit_bstate_t>(bstate.get());
     return unitstate;
 }
 
 void xstatestore_cache_t::set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& state) {
-    std::lock_guard<std::mutex> lock(m_unitstates_cache_mutex);
-    m_unitstate_cache->set_unitstate(block_hash, state);
-    xdbg("xstatestore_cache_t::set_unitstate hash=%s,state=%s", base::xstring_utl::to_hex(block_hash).c_str(), state->get_bstate()->dump().c_str());
+    m_unitstate_cache.put(block_hash, state->get_bstate());
+    xdbg("xstatestore_cache_t::set_unitstate hash=%s:%s,state=%s", base::xstring_utl::to_hex(block_hash).c_str(), base::xstring_utl::to_hex(state->get_bstate()->get_last_block_hash()).c_str(), state->get_bstate()->dump().c_str());
 }
 
 void xstatestore_cache_t::set_latest_connected_tablestate(uint64_t height, xtablestate_ext_ptr_t const& tablestate) {
@@ -343,7 +254,7 @@ data::xunitstate_ptr_t xstatestore_dbaccess_t::read_unit_bstate(common::xaccount
 
 
 //============================xstatestore_accessor_t============================
-xstatestore_accessor_t::xstatestore_accessor_t(common::xtable_address_t const& address) : m_state_cache(common::zone_index(address)) {
+xstatestore_accessor_t::xstatestore_accessor_t(common::xtable_address_t const& address) {
     base::xvtable_t * target_table = base::xvchain_t::instance().get_table(address.vaccount().get_xvid());
     m_statehub = std::make_shared<xvstatehub_t>(target_table);
 }
@@ -399,7 +310,7 @@ xtablestate_ext_ptr_t xstatestore_accessor_t::read_table_bstate_for_account_inde
 }
 
 data::xunitstate_ptr_t xstatestore_accessor_t::read_unit_bstate(common::xaccount_address_t const& address, uint64_t height, const std::string & block_hash) const {
-    data::xunitstate_ptr_t unitstate = m_state_cache.get_unitstate(address.to_string(), height, block_hash);
+    data::xunitstate_ptr_t unitstate = m_state_cache.get_unitstate(block_hash);
     if (unitstate != nullptr) {
         return unitstate;
     }

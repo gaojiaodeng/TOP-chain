@@ -6,7 +6,7 @@
 
 #include <string>
 #include "xbasic/xmemory.hpp"
-#include "xbasic/xlru_cache_specialize.h"
+#include "xbase/xlru_cache.h"
 #include "xstatestore/xstatestore_base.h"
 #include "xstatestore/xtablestate_ext.h"
 #include "xstatestore/xstatehub.h"
@@ -15,54 +15,17 @@
 
 NS_BEG2(top, statestore)
 
-
-class xunitstate_cache_base_t {
-public:
-    virtual data::xunitstate_ptr_t  get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const = 0;
-    virtual void set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) = 0;
-};
-
-class xcontract_unitstates_t {
-    enum {
-        enum_keep_num = 4,
-    };
-public:
-    xcontract_unitstates_t(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate);
-    data::xunitstate_ptr_t  get_unitstate(uint64_t height, std::string const& block_hash) const;
-    void set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate);
-private:
-    mutable std::map<uint64_t, std::map<std::string, xobject_ptr_t<base::xvbstate_t>>> m_uintstates;
-};
-
-
-class xunitstate_cache_contract_t : public xunitstate_cache_base_t {
-public:
-    virtual data::xunitstate_ptr_t  get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const override;
-    virtual void set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) override;
-private:
-    mutable std::map<std::string, xcontract_unitstates_t> m_account_uintstates_map;
-};
-
-class xunitstate_cache_normal_t : public xunitstate_cache_base_t {
-public:
-    xunitstate_cache_normal_t(size_t lru_size);
-    virtual data::xunitstate_ptr_t  get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const override;
-    virtual void set_unitstate(std::string const& block_hash, data::xunitstate_ptr_t const& unitstate) override;
-private:
-    mutable basic::xlru_cache_t<std::string, std::pair<std::string, xobject_ptr_t<base::xvbstate_t>>, threading::xdummy_mutex_t> m_unitstate_lru;
-};
-
 class xstatestore_cache_t {
 protected:
-    enum {
-        enum_max_unit_state_lru_cache_normal = 2000,
-        enum_max_unit_state_lru_cache_evm = 30000,
+    enum
+    {
+        enum_max_table_state_lru_cache_max     = 4, //max table state lru cache count
+        enum_max_unit_state_lru_cache_max      = 30000, //max unit state lru cache count
     };
-
 public:
-    xstatestore_cache_t(base::enum_xchain_zone_index zone_idx);
+    xstatestore_cache_t();
 public:
-    data::xunitstate_ptr_t  get_unitstate(std::string const& account, uint64_t height, std::string const& block_hash) const;
+    data::xunitstate_ptr_t  get_unitstate(std::string const& block_hash) const;
     xtablestate_ext_ptr_t const&    get_latest_connectted_tablestate() const;
     xtablestate_ext_ptr_t   get_tablestate(uint64_t height, std::string const& block_hash) const;
 
@@ -75,8 +38,7 @@ private:
     xtablestate_ext_ptr_t   get_tablestate_inner(uint64_t height, std::string const& block_hash) const;
 
     xtablestate_ext_ptr_t    m_latest_connectted_tablestate{nullptr};
-    std::shared_ptr<xunitstate_cache_base_t> m_unitstate_cache{nullptr};
-    mutable std::mutex m_unitstates_cache_mutex;
+    mutable base::xlru_cache<std::string, xobject_ptr_t<base::xvbstate_t>> m_unitstate_cache;  //unitstate cache
     std::map<uint64_t, std::map<std::string, xtablestate_ext_ptr_t>>  m_table_states;
 };
 
