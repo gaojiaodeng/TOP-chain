@@ -201,6 +201,12 @@ void xstatestore_executor_t::execute_and_get_accountindex(base::xvblock_t* block
     }
 }
 
+bool xstatestore_executor_t::get_accountindex_by_recent_blocks_cache(base::xvblock_t* block, common::xaccount_address_t const& unit_addr, base::xaccount_index_t & account_index) const {
+    auto ret = m_account_index_cache.get_account_index(block, unit_addr.to_string(), account_index);
+    XMETRICS_GAUGE(metrics::statestore_get_account_index_from_cache, ret ? 1 : 0);
+    return ret;
+}
+
 void xstatestore_executor_t::execute_and_get_tablestate(base::xvblock_t* block, data::xtablestate_ptr_t &tablestate, std::error_code & ec) const {
     xtablestate_ext_ptr_t tablestate_ext = execute_and_get_tablestate_ext(block, true, ec);
     if (nullptr != tablestate_ext) {

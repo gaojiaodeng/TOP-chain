@@ -259,18 +259,18 @@ const std::vector<xcons_transaction_ptr_t> xsend_tx_queue_t::get_txs(uint32_t ma
         } else {
             base::xaccount_index_t account_index;
             // uint64_t now = base::xtime_utl::time_now_ms();
-            auto ret = statestore::xstatestore_hub_t::instance()->get_accountindex_from_table_block(common::xaccount_address_t(account_addr), cert_block, account_index);
+            auto ret = statestore::xstatestore_hub_t::instance()->get_accountindex_by_recent_blocks_cache(common::xaccount_address_t(account_addr), cert_block, account_index);
             // todo: test code! remove later.
             // uint64_t now_1 = base::xtime_utl::time_now_ms();
             // get_index_total_cost += (now_1 - now);
             // if (now_1 >= now + 5) {
             //     xtxpool_info("xsend_tx_queue_t::get_txs table:%s get_accountindex_from_table_block cost too much time:%llu", m_send_tx_queue_internal.get_table_addr().c_str(), now_1 - now);
             // }
-            if (!ret) {
-                // xwarn("xsend_tx_queue_t::get_txs mpt get account index fail account:%s", account_addr.c_str());
-                continue;
-            }
-            auto lower_nonce = account_index.get_latest_tx_nonce();
+            // if (!ret) {
+            //     // xwarn("xsend_tx_queue_t::get_txs mpt get account index fail account:%s", account_addr.c_str());
+            //     continue;
+            // }
+            auto lower_nonce = ret ? account_index.get_latest_tx_nonce() : 0;
             if (nonce > lower_nonce) {
                 auto iter_send_tx_account = m_send_tx_accounts.find(account_addr);
                 xassert(iter_send_tx_account != m_send_tx_accounts.end());
