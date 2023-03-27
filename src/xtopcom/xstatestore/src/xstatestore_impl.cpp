@@ -255,6 +255,14 @@ bool xstatestore_impl_t::get_accountindex_from_table_block(common::xaccount_addr
     return false;
 }
 
+bool xstatestore_impl_t::accountindex_cache_unbroken(base::xvblock_t * table_block) const {
+    xstatestore_table_ptr_t tablestore = get_table_statestore_from_table_addr(table_block->get_account());
+    if (tablestore != nullptr) {
+        return tablestore->accountindex_cache_unbroken(table_block);
+    }
+    return false;
+}
+
 bool xstatestore_impl_t::get_accountindex_by_recent_blocks_cache(common::xaccount_address_t const & account_address, base::xvblock_t * table_block, base::xaccount_index_t & account_index) const {
     xstatestore_table_ptr_t tablestore = get_table_statestore_from_table_addr(table_block->get_account());
     if (tablestore != nullptr) {
