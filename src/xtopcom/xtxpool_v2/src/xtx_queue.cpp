@@ -98,6 +98,7 @@ int32_t xsend_tx_account_t::push_tx(const std::shared_ptr<xtx_entry> & tx_ent) {
         if (tx_ent->get_tx()->get_transaction()->get_fire_timestamp() <= iter->second->get_tx()->get_transaction()->get_fire_timestamp()) {
             return xtxpool_error_tx_nonce_duplicate;
         } else {
+            XMETRICS_GAUGE(metrics::txpool_push_send_fail_replaced, 1);
             m_send_tx_queue_internal->erase_tx(iter->second->get_tx()->get_tx_hash_256());
             m_txs[tx_nonce] = tx_ent;
             m_send_tx_queue_internal->insert_tx(tx_ent);

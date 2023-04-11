@@ -29,20 +29,20 @@ xcluster_rpc_handler::xcluster_rpc_handler(std::shared_ptr<xvnetwork_driver_face
                                            xtxpool_service_v2::xtxpool_proxy_face_ptr const & txpool_service,
                                            observer_ptr<base::xvblockstore_t> block_store,
                                            observer_ptr<base::xvtxstore_t> txstore,
-                                           observer_ptr<top::base::xiothread_t> thread)
+                                           observer_ptr<top::base::xiothread_t> thread,
+                                           observer_ptr<top::base::xiothread_t> thread_query)
   : m_cluster_vhost(cluster_vhost)
   , m_router_ptr(router_ptr)
   , m_txpool_service(txpool_service)
   , m_rule_mgr_ptr(top::make_unique<xfilter_manager>())
-  , m_thread(thread) {
+  , m_thread(thread)
+  , m_thread_query(thread_query) {
 }
 
 void xcluster_rpc_handler::on_message(const xvnode_address_t & edge_sender, const xmessage_t & message) {
     XMETRICS_TIME_RECORD("rpc_net_iothread_dispatch_cluster_rpc_handler");
-#if defined(DEBUG)
     auto msg_id = message.id();
     xdbg_rpc("xcluster_rpc_handler on_message,id(%x,%s)", msg_id, edge_sender.to_string().c_str());  // address to_string
-#endif
 
     auto self = shared_from_this();
     auto process_request = [self](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
@@ -68,18 +68,25 @@ void xcluster_rpc_handler::on_message(const xvnode_address_t & edge_sender, cons
         return true;
     };
     int64_t in, out;
-    int32_t queue_size = m_thread->count_calls(in, out);
+    bool use_query_thread = (msg_id == rpc_msg_response || msg_id == rpc_msg_eth_response);
+    int32_t queue_size = use_query_thread ? (m_thread_query->count_calls(in, out)) : (m_thread->count_calls(in, out));
+    metrics::E_SIMPLE_METRICS_TAG metrics_total = use_query_thread ? metrics::mailbox_rpc_query_total : metrics::mailbox_rpc_auditor_total;
+    metrics::E_SIMPLE_METRICS_TAG metrics_cur = use_query_thread ? metrics::mailbox_rpc_query_cur : metrics::mailbox_rpc_auditor_cur;
     if (queue_size >= max_cluster_rpc_mailbox_num) {
         xkinfo_rpc("xcluster_rpc_handler::on_message cluster rpc mailbox is full:%d", queue_size);
-        XMETRICS_GAUGE(metrics::mailbox_rpc_auditor_total, 0);
+        XMETRICS_GAUGE(metrics_total, 0);
         return;
     }
-    XMETRICS_GAUGE_SET_VALUE(metrics::mailbox_rpc_auditor_cur, queue_size);
-    XMETRICS_GAUGE(metrics::mailbox_rpc_auditor_total, 1);
+    XMETRICS_GAUGE_SET_VALUE(metrics_cur, queue_size);
+    XMETRICS_GAUGE(metrics_total, 1);
 
     base::xauto_ptr<rpc_message_para_t> para = new rpc_message_para_t(edge_sender, message);
     base::xcall_t asyn_call(process_request, para.get());
-    m_thread->send_call(asyn_call);
+    if (use_query_thread) {
+        m_thread_query->send_call(asyn_call);
+    } else {
+        m_thread->send_call(asyn_call);
+    }
 }
 
 void xcluster_rpc_handler::cluster_process_request(const xrpc_msg_request_t & edge_msg, const xvnode_address_t & edge_sender, const xmessage_t & message) {

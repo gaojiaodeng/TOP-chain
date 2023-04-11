@@ -601,6 +601,7 @@ char const * matrics_name(xmetrics_tag_t const tag) noexcept {
         RETURN_METRICS_NAME(mailbox_xsync_total);
         RETURN_METRICS_NAME(mailbox_rpc_auditor_total);
         RETURN_METRICS_NAME(mailbox_rpc_validator_total);
+        RETURN_METRICS_NAME(mailbox_rpc_query_total);
         RETURN_METRICS_NAME(mailbox_txpool_fast_total);
         RETURN_METRICS_NAME(mailbox_txpool_slow_total);
         RETURN_METRICS_NAME(mailbox_us_total);
@@ -611,6 +612,7 @@ char const * matrics_name(xmetrics_tag_t const tag) noexcept {
         RETURN_METRICS_NAME(mailbox_xsync_cur);
         RETURN_METRICS_NAME(mailbox_rpc_auditor_cur);
         RETURN_METRICS_NAME(mailbox_rpc_validator_cur);
+        RETURN_METRICS_NAME(mailbox_rpc_query_cur);
         RETURN_METRICS_NAME(mailbox_txpool_fast_cur);
         RETURN_METRICS_NAME(mailbox_txpool_slow_cur);
         RETURN_METRICS_NAME(mailbox_us_cur);

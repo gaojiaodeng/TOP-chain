@@ -29,7 +29,7 @@ public:
 
     void stop();
 
-    static void init_rpc_cb_thread();
+    static void init_rpc_cb_thread(bool querythread = false);
 
 private:
     shared_ptr<xshard_rpc_handler>   m_shard_handler{ nullptr };
@@ -37,6 +37,7 @@ private:
     shared_ptr<xcluster_rpc_handler> m_cluster_handler{nullptr};
     shared_ptr<xrpc_edge_vhost>      m_edge_handler{ nullptr };
     static top::base::xiothread_t*   m_thread;
+    static top::base::xiothread_t*   m_thread_query;
 };
 
 class rpc_message_para_t : public top::base::xobject_t {

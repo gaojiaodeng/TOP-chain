@@ -11,6 +11,7 @@
 NS_BEG2(top, xrpc)
 
 top::base::xiothread_t* xrpc_init::m_thread = nullptr;
+top::base::xiothread_t* xrpc_init::m_thread_query = nullptr;
 
 xrpc_init::xrpc_init(std::shared_ptr<xvnetwork_driver_face_t> vhost,
               const common::xnode_type_t node_type,
@@ -42,7 +43,8 @@ xrpc_init::xrpc_init(std::shared_ptr<xvnetwork_driver_face_t> vhost,
     case common::xnode_type_t::evm_auditor:
         assert(nullptr != txpool_service);
         init_rpc_cb_thread();
-        m_cluster_handler = std::make_shared<xcluster_rpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread));
+        init_rpc_cb_thread(true);
+        m_cluster_handler = std::make_shared<xcluster_rpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread), make_observer(m_thread_query));
         m_cluster_handler->start();
         break;
     case common::xnode_type_t::edge: {
@@ -64,8 +66,8 @@ xrpc_init::xrpc_init(std::shared_ptr<xvnetwork_driver_face_t> vhost,
     case common::xnode_type_t::storage_archive:
     {
         xdbg("arc rpc start");
-        init_rpc_cb_thread();
-        m_rpc_handler = std::make_shared<xrpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread));
+        init_rpc_cb_thread(true);
+        m_rpc_handler = std::make_shared<xrpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread_query));
         m_rpc_handler->start();
         break;
     }
@@ -87,8 +89,8 @@ xrpc_init::xrpc_init(std::shared_ptr<xvnetwork_driver_face_t> vhost,
     }
     case common::xnode_type_t::fullnode: {
         xdbg("fullnode rpc start");
-        init_rpc_cb_thread();
-        m_rpc_handler = std::make_shared<xrpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread));
+        init_rpc_cb_thread(true);
+        m_rpc_handler = std::make_shared<xrpc_handler>(vhost, router_ptr, txpool_service, block_store, txstore, make_observer(m_thread_query));
         m_rpc_handler->start();
 
         break;
@@ -127,9 +129,15 @@ void xrpc_init::stop() {
     }
 }
 
-void xrpc_init::init_rpc_cb_thread(){
-    if(m_thread == nullptr){
-        m_thread = base::xiothread_t::create_thread(base::xcontext_t::instance(), 0, -1);
+void xrpc_init::init_rpc_cb_thread(bool querythread){
+    if (querythread) {
+        if(m_thread_query == nullptr){
+            m_thread_query = base::xiothread_t::create_thread(base::xcontext_t::instance(), 0, -1);
+        }
+    } else {
+        if(m_thread == nullptr){
+            m_thread = base::xiothread_t::create_thread(base::xcontext_t::instance(), 0, -1);
+        }
     }
 }
 

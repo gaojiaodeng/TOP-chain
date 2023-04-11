@@ -27,7 +27,8 @@ public:
                          xtxpool_service_v2::xtxpool_proxy_face_ptr const & txpool_service,
                          observer_ptr<base::xvblockstore_t>              block_store,
                          observer_ptr<base::xvtxstore_t>                 txstore,
-                         observer_ptr<top::base::xiothread_t>            thread);
+                         observer_ptr<top::base::xiothread_t>            thread,
+                         observer_ptr<top::base::xiothread_t>            thread_query);
     void on_message(const xvnode_address_t & edge_sender, xmessage_t const & message);
     void cluster_process_request(const xrpc_msg_request_t & edge_msg, const xvnode_address_t & edge_sender, const xmessage_t & message);
     void cluster_process_response(const xmessage_t & msg, const xvnode_address_t & shard_sender);
@@ -40,6 +41,7 @@ private:
     xtxpool_service_v2::xtxpool_proxy_face_ptr           m_txpool_service;
     unique_ptr<xfilter_manager>                          m_rule_mgr_ptr;
     observer_ptr<top::base::xiothread_t>                 m_thread;
+    observer_ptr<top::base::xiothread_t>                 m_thread_query;
 };
 
 NS_END2

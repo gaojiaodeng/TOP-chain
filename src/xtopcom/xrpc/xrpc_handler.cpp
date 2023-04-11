@@ -40,10 +40,14 @@ xrpc_handler::xrpc_handler(std::shared_ptr<xvnetwork_driver_face_t>           ar
 
 void xrpc_handler::on_message(const xvnode_address_t & edge_sender, const xmessage_t & message) {
     XMETRICS_TIME_RECORD("rpc_net_iothread_dispatch_cluster_rpc_handler");
-#if defined(DEBUG)
     auto msg_id = message.id();
     xdbg_rpc("xarc_rpc_handler on_message,id(%x,%s)", msg_id, edge_sender.to_string().c_str());  // address to_string
-#endif
+
+    // archive only process query request and response messages.
+    if (msg_id != rpc_msg_query_request && msg_id != rpc_msg_eth_query_request && msg_id != rpc_msg_response && msg_id != rpc_msg_eth_response) {
+        xdbg_rpc("wish arc tx");
+        return;
+    }
 
     auto self = shared_from_this();
     auto process_request = [self](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
@@ -51,15 +55,10 @@ void xrpc_handler::on_message(const xvnode_address_t & edge_sender, const xmessa
         auto message = para->m_message;
         auto edge_sender = para->m_sender;
         auto msgid = message.id();
-        if (msgid == rpc_msg_request || msgid == rpc_msg_query_request || msgid == rpc_msg_eth_request || msgid == rpc_msg_eth_query_request) {
+        if (msgid == rpc_msg_query_request || msgid == rpc_msg_eth_query_request) {
             xrpc_msg_request_t msg = codec::xmsgpack_codec_t<xrpc_msg_request_t>::decode(message.payload());
-            if (msgid == rpc_msg_request || msgid == rpc_msg_eth_request) {
-                xdbg_rpc("wish arc tx");
-                return true;
-            } else {
-                self->cluster_process_query_request(msg, edge_sender, message);
-                XMETRICS_GAUGE(metrics::rpc_auditor_query_request, 1);
-            }
+            self->cluster_process_query_request(msg, edge_sender, message);
+            XMETRICS_GAUGE(metrics::rpc_auditor_query_request, 1);
         }
         else if (msgid == rpc_msg_response || msgid == rpc_msg_eth_response) {
             self->cluster_process_response(message, edge_sender);
@@ -71,11 +70,11 @@ void xrpc_handler::on_message(const xvnode_address_t & edge_sender, const xmessa
     int32_t queue_size = m_thread->count_calls(in, out);
     if (queue_size >= max_cluster_rpc_mailbox_num) {
         xkinfo_rpc("xarc_rpc_handler::on_message cluster rpc mailbox is full:%d", queue_size);
-        XMETRICS_GAUGE(metrics::mailbox_rpc_auditor_total, 0);
+        XMETRICS_GAUGE(metrics::mailbox_rpc_query_total, 0);
         return;
     }
-    XMETRICS_GAUGE_SET_VALUE(metrics::mailbox_rpc_auditor_cur, queue_size);
-    XMETRICS_GAUGE(metrics::mailbox_rpc_auditor_total, 1);
+    XMETRICS_GAUGE_SET_VALUE(metrics::mailbox_rpc_query_cur, queue_size);
+    XMETRICS_GAUGE(metrics::mailbox_rpc_query_total, 1);
 
     base::xauto_ptr<rpc_message_para_t> para = new rpc_message_para_t(edge_sender, message);
     base::xcall_t asyn_call(process_request, para.get());
