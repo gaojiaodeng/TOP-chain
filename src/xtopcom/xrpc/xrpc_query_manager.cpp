@@ -874,6 +874,33 @@ void xrpc_query_manager::getTransaction(Json::Value & js_req, Json::Value & js_r
         get_transaction_on_demand(account, version, hash, result_json, strResult, nErrorCode);
     }
 
+    if (!result_json.empty()) {
+        // for eth transaction
+        if (result_json["original_tx_info"]["tx_structure_version"] == xtransaction_version_3) {
+            uint256_t hash = top::data::hex_to_uint256(js_req["tx_hash"].asString());
+            std::string tx_hash_str = std::string(reinterpret_cast<char *>(hash.data()), hash.size());
+            std::string tx_hash = js_req["tx_hash"].asString();
+            xtxindex_detail_ptr_t sendindex = xrpc_loader_t::load_ethtx_indx_detail(tx_hash_str);
+            if (sendindex != nullptr) {
+                Json::Value js_result;
+                std::error_code ec;
+                xrpc_eth_parser_t::receipt_to_json_for_top_rpc(tx_hash, sendindex, js_result, ec);
+                if (!ec) {
+                    result_json["evm"] = js_result;
+                    js_rsp = result_json;
+                    return;
+                }
+            }
+            // if receipt not ok, query fail.
+            const string & account = js_req["account_addr"].asString();
+            xerror("xarc_query_manager::getTransactionV2 get evm receipt fail account: %s, tx hash: %s", account.c_str(), tx_hash.c_str());
+            nErrorCode = (uint32_t)enum_xrpc_error_code::rpc_shard_exec_error;
+            return;
+        }
+        result_json["evm"] = "";
+        js_rsp = result_json;
+    }
+
     js_rsp = result_json;
 }
 
