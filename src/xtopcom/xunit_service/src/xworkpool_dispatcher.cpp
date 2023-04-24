@@ -54,7 +54,12 @@ bool xworkpool_dispatcher::dispatch(base::xworkerpool_t * pool, base::xcspdu_t *
     // xunit_dbg("[xunitservice] dispatch table id %d, packer %p", table_id, packer);
     if (packer != nullptr) {
         auto packer_xip = packer->get_xip2_addr();
-        if (is_xip2_equal(packer_xip, xip_to) && packer->get_account() == pdu->get_block_account()) {
+        bool xip_match = is_xip2_equal(packer_xip, xip_to);
+        if (!xip_match) {
+            auto new_packer_xip = packer->get_new_xip();
+            xip_match = is_xip2_equal(new_packer_xip, xip_to);
+        }
+        if (xip_match && packer->get_account() == pdu->get_block_account()) {
             xunit_dbg("xworkpool_dispatcher::dispatch succ.pdu=%s,at_node:%s,packer=%p", pdu->dump().c_str(), xcons_utl::xip_to_hex(packer_xip).c_str(), packer);
             return async_dispatch(pdu, xip_from, xip_to, packer) == 0;
         } else {

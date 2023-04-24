@@ -475,7 +475,7 @@ xblock_ptr_t xtable_maker_t::make_light_table_v2(bool is_leader, const xtablemak
             lighttable_para.get_txs().size());
     }
 
-    tableblock->set_excontainer(std::make_shared<xtable_mpt_container>(statectx_ptr));
+    tableblock->set_excontainer(std::make_shared<xtable_mpt_container>(statectx_ptr, lighttable_para.get_txs()));
     return tableblock;
 }
 

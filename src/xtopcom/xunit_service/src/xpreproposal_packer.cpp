@@ -60,6 +60,7 @@ bool xpreproposal_packer::proc_preproposal(const xvip2_t & leader_xip,  uint64_t
     }
     xinfo("xpreproposal_packer::proc_preproposal make proposal success. cs_para:%s", cs_para.dump().c_str());
     m_preproposal_block = local_block;
+    set_in_consensus(true);
     return true;
 }
 

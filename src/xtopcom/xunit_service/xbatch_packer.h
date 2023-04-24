@@ -63,6 +63,7 @@ public:
     virtual bool on_replicate_finish(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms);
     virtual bool on_consensus_commit(const base::xvevent_t & event, xcsobject_t* from_child, const int32_t cur_thread_id, const uint64_t timenow_ms);
     virtual bool set_start_time(const common::xlogic_time_t& start_time);
+    virtual const xvip2_t & get_new_xip();
 protected:
     virtual bool on_view_fire(const base::xvevent_t &event, xcsobject_t *from_parent, const int32_t cur_thread_id, const uint64_t timenow_ms);
 
@@ -80,6 +81,7 @@ protected:
     std::shared_ptr<xproposal_maker_face> get_proposal_maker() const;
     bool    connect_to_checkpoint();
     bool    leader_xip_changed(const data::xblock_consensus_para_t & cs_para) const;
+    void    set_in_consensus(bool is_in_consensus);
 
 private:
     bool    start_proposal(uint32_t min_tx_num);
@@ -101,6 +103,9 @@ private:
     virtual xunit_service::xpreproposal_send_cb get_preproposal_send_cb();
     virtual bool process_msg(const xvip2_t & from_addr, const xvip2_t & to_addr, const base::xcspdu_t & packet, int32_t cur_thread_id, uint64_t timenow_ms);
     virtual int veriry_proposal_by_preproposal_block(base::xvblock_t * proposal_block);
+    void update_xip_addr(bool view_change);
+    void update_xip_addr_view_change();
+    void update_xip_addr_proposal(const xvip2_t & to_xip);
 
 private:
     base::xtable_index_t                     m_tableid;
@@ -111,15 +116,18 @@ private:
     base::xtimer_t*                          m_raw_timer{nullptr};
     // m_is_leader to decide if timer need to do packing units and then start consensus
     bool                                     m_is_leader{false};
+    bool                                     m_leader_packed{false};
+    bool                                     m_is_in_consensus{false};
     data::xblock_consensus_para_ptr_t        m_leader_cs_para{nullptr};
     // m_leader_packed is used to avoid more than one block produced in one viewid
-    bool                                     m_leader_packed{false};
     uint64_t                                 m_last_view_clock{0};
 
     // fade xip. fade version should not make new proposal
     xvip2_t                                  m_faded_xip2{};
     // record last xip in case of consensus success but leader xip changed.
     xvip2_t                                  m_last_xip2{};
+    // cache new xip, use it when viewid updated or proposal/preproposal is in new round.
+    xvip2_t                                  m_new_xip2{};
     common::xtable_address_t                 m_table_addr;
     xpack_strategy_t                         m_pack_strategy;
 #ifdef ENABLE_METRICS

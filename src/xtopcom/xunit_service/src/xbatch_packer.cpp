@@ -43,8 +43,8 @@ xbatch_packer::xbatch_packer(base::xtable_index_t                             &t
                              const uint32_t                                   target_thread_id)
   : xcsaccount_t(_context, target_thread_id, account_id), m_tableid(tableid), m_last_view_id(0), m_para(para), m_table_addr(common::xtable_address_t::build_from(account_id)) {
     auto cert_auth = m_para->get_resources()->get_certauth();
-    m_last_xip2.high_addr = -1;
-    m_last_xip2.low_addr = -1;
+    set_empty_xip2(m_last_xip2);
+    set_empty_xip2(m_new_xip2);
     register_plugin(cert_auth);
     auto store = m_para->get_resources()->get_vblockstore();
     set_vblockstore(store);
@@ -280,6 +280,7 @@ bool xbatch_packer::on_view_fire(const base::xvevent_t & event, xcsobject_t * fr
     }
     clear_for_new_view();
 
+    update_xip_addr_view_change();
     m_last_view_id = view_ev->get_viewid();
     m_last_view_clock = view_ev->get_clock();
 
@@ -458,6 +459,7 @@ bool  xbatch_packer::on_timer_fire(const int32_t thread_id, const int64_t timer_
         return true;
     }
     // xunit_dbg("xbatch_packer::on_timer_fire retry start proposal.this:%p node:%s", this, m_para->get_resources()->get_account().c_str());
+    update_xip_addr_view_change();
     m_leader_packed = start_proposal(calculate_min_tx_num(false, current_time_ms));
     if (!m_leader_packed) {
         m_raw_timer->start(m_pack_strategy.get_timer_interval(), 0);
@@ -529,6 +531,7 @@ bool xbatch_packer::verify_proposal_viewid(const xvip2_t & from_addr, const xvip
             xvip2_t leader_xip =
                 leader_election->get_leader_xip(viewid, get_account(), nullptr, local_addr, from_addr, election_epoch, enum_rotate_mode_rotate_by_view_id);
             if (xcons_utl::xip_equals(leader_xip, from_addr)) {
+                update_xip_addr_proposal(local_addr);
                 valid = true;
             }
         } else {
@@ -602,6 +605,7 @@ int xbatch_packer::verify_proposal(base::xvblock_t * proposal_block, base::xvqce
     if (ret == xsuccess) {
         ret = set_vote_extend_data(proposal_block, proposal_para.get_vote_extend_hash(), false);
     }
+    set_in_consensus(true);
     return ret;
 }
 
@@ -639,18 +643,58 @@ xvip2_t xbatch_packer::get_child_xip(const xvip2_t & local_xip, const std::strin
 }
 
 bool xbatch_packer::reset_xip_addr(const xvip2_t & new_addr) {
-    if (!is_xip2_empty(get_xip2_addr())) {
-        m_last_xip2 = get_xip2_addr();
-    }
-    xinfo("xbatch_packer::reset_xip_addr %s %s,last xip:%s node:%s is_leader=%d viewid=%llu this:%p",
+    bool is_new_batch_packer = is_xip2_empty(get_xip2_addr());
+    xinfo("xbatch_packer::reset_xip_addr tps_key %s %s,last xip:%s node:%s is_leader=%d viewid=%llu new:%d in_cons:%d this:%p",
           get_account().c_str(),
           xcons_utl::xip_to_hex(new_addr).c_str(),
           xcons_utl::xip_to_hex(m_last_xip2).c_str(),
           m_para->get_resources()->get_account().c_str(),
           m_is_leader,
           m_last_view_id,
+          is_new_batch_packer,
+          m_is_in_consensus,
           this);
-    return xcsaccount_t::reset_xip_addr(new_addr);
+    if (is_new_batch_packer || !m_is_in_consensus) {
+        // this batch packer is a new one.
+        m_last_xip2 = get_xip2_addr();
+        xcsaccount_t::reset_xip_addr(new_addr);
+    } else {
+        // this batch packer update xip addr. the new xip will take effect after new view or new proposal/preproposal is in new round.
+        m_new_xip2 = new_addr;
+    }
+    return true;
+}
+void xbatch_packer::update_xip_addr(bool view_change) {
+    m_last_xip2 = get_xip2_addr();
+    xinfo("xbatch_packer::update_xip_addr tps_key %s %s,last xip:%s node:%s is_leader=%d viewid=%llu vc:%d this:%p",
+          get_account().c_str(),
+          xcons_utl::xip_to_hex(m_new_xip2).c_str(),
+          xcons_utl::xip_to_hex(m_last_xip2).c_str(),
+          m_para->get_resources()->get_account().c_str(),
+          m_is_leader,
+          m_last_view_id,
+          view_change,
+          this);
+    xcsaccount_t::reset_xip_addr(m_new_xip2);
+    set_empty_xip2(m_new_xip2);
+}
+
+void xbatch_packer::update_xip_addr_view_change() {
+    set_in_consensus(false);
+    if (is_xip2_empty(m_new_xip2)) {
+        return;
+    }
+    update_xip_addr(true);
+}
+
+void xbatch_packer::update_xip_addr_proposal(const xvip2_t & to_xip) {
+    if (is_xip2_equal(to_xip, m_new_xip2)) {
+        update_xip_addr(false);
+    }
+}
+
+const xvip2_t & xbatch_packer::get_new_xip() {
+    return m_new_xip2;
 }
 
 bool xbatch_packer::set_fade_xip_addr(const xvip2_t & new_addr) {
@@ -669,6 +713,7 @@ bool xbatch_packer::set_start_time(const common::xlogic_time_t& start_time) {
 }
 
 bool xbatch_packer::on_proposal_finish(const base::xvevent_t & event, xcsobject_t * from_child, const int32_t cur_thread_id, const uint64_t timenow_ms) {
+    set_in_consensus(false);
     xconsensus::xproposal_finish * _evt_obj = (xconsensus::xproposal_finish *)&event;
     auto xip = get_xip2_addr();
     bool is_leader = xcons_utl::xip_equals(xip, _evt_obj->get_target_proposal()->get_cert()->get_validator())
@@ -698,6 +743,7 @@ bool xbatch_packer::on_proposal_finish(const base::xvevent_t & event, xcsobject_
         auto excontainer = vblock->get_excontainer();
         if (excontainer != nullptr) {
             excontainer->commit(vblock);
+            m_para->get_resources()->get_txpool()->add_tx_action_cache(vblock, excontainer->get_input_actions());
         }
         
         xunit_info("xbatch_packer::on_proposal_finish tps_key after commit leader:%d,proposal=%s", is_leader, _evt_obj->get_target_proposal()->dump().c_str());
@@ -835,6 +881,10 @@ bool xbatch_packer::leader_xip_changed(const data::xblock_consensus_para_t & cs_
         return true;
     }
     return false;
+}
+
+void xbatch_packer::set_in_consensus(bool is_in_consensus) {
+    m_is_in_consensus = is_in_consensus;
 }
 
 void xpack_strategy_t::clear() {
