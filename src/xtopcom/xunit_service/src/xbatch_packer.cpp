@@ -752,6 +752,9 @@ bool xbatch_packer::on_proposal_finish(const base::xvevent_t & event, xcsobject_
         mbus::xevent_ptr_t ev = make_object_ptr<mbus::xevent_consensus_data_t>(vblock, is_leader);
         m_para->get_resources()->get_bus()->push_event(ev);
         XMETRICS_COUNTER_SET(m_cons_succ_height_metrics_tag, vblock->get_height());
+        if (is_leader && vblock->get_height() > 2) {
+            send_receipts(vblock);
+        }
     }
     return false;  // throw event up again to let txs-pool or other object start new consensus
 }
