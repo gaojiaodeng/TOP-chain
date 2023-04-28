@@ -38,7 +38,6 @@ namespace top
             }
             // xinfo("xunitstore_t::store_units tps_key finish kvs %s,units_kvs=%zu", table_block->dump().c_str(), units_kvs.size());
             bool ret = m_blockdb_ptr->get_xdbstore()->set_values(units_kvs);
-            xinfo("xunitstore_t::store_units tps_key finish store %s,units_kvs=%zu", table_block->dump().c_str(), units_kvs.size());
             return ret;
         }
         bool xunitstore_t::store_units(base::xvblock_t* table_block) {

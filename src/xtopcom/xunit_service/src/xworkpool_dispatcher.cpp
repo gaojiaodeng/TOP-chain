@@ -238,9 +238,8 @@ bool xworkpool_dispatcher::subscribe(const std::vector<base::xtable_index_t> & t
     if (!reset_packers.empty()) {
         for (auto packer_ptr : reset_packers) {
             xbatch_packer * packer = packer_ptr.get();
-            auto            async_reset = [xip, start_time](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
+            auto async_reset = [xip](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
                 auto packer = dynamic_cast<xbatch_packer *>(call.get_param1().get_object());
-                packer->set_start_time(start_time);
                 packer->reset_xip_addr(xip);
                 return true;
             };

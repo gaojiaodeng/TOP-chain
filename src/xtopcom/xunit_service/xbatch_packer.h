@@ -62,7 +62,6 @@ public:
     virtual bool on_proposal_finish(const base::xvevent_t & event, xcsobject_t* from_child, const int32_t cur_thread_id, const uint64_t timenow_ms);
     virtual bool on_replicate_finish(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms);
     virtual bool on_consensus_commit(const base::xvevent_t & event, xcsobject_t* from_child, const int32_t cur_thread_id, const uint64_t timenow_ms);
-    virtual bool set_start_time(const common::xlogic_time_t& start_time);
 protected:
     virtual bool on_view_fire(const base::xvevent_t &event, xcsobject_t *from_parent, const int32_t cur_thread_id, const uint64_t timenow_ms);
 
@@ -84,7 +83,7 @@ protected:
 private:
     bool    start_proposal(uint32_t min_tx_num);
     bool    verify_proposal_viewid(const xvip2_t & from_addr, const xvip2_t & local_addr, uint64_t viewid);
-    void    check_latest_cert_block(base::xvblock_t* _cert_block, const xconsensus::xcsview_fire* viewfire, std::error_code & ec);
+    void    check_latest_cert_block(base::xvblock_t* _cert_block, uint64_t viewid, uint64_t clock, std::error_code & ec);
     void    reset_leader_info();
     void    make_receipts_and_send(data::xblock_t * commit_block, data::xblock_t * cert_block);
     virtual uint32_t calculate_min_tx_num(bool first_packing, uint64_t time_ms);
@@ -101,13 +100,13 @@ private:
     virtual xunit_service::xpreproposal_send_cb get_preproposal_send_cb();
     virtual bool process_msg(const xvip2_t & from_addr, const xvip2_t & to_addr, const base::xcspdu_t & packet, int32_t cur_thread_id, uint64_t timenow_ms);
     virtual int veriry_proposal_by_preproposal_block(base::xvblock_t * proposal_block);
+    bool check_for_view_fire(base::xvblock_t * cert_block, uint64_t viewid, uint64_t clock);
 
 private:
     base::xtable_index_t                     m_tableid;
     volatile uint64_t                        m_last_view_id;
     std::shared_ptr<xcons_service_para_face> m_para;
     std::shared_ptr<xproposal_maker_face>    m_proposal_maker;
-    common::xlogic_time_t                    m_start_time;
     base::xtimer_t*                          m_raw_timer{nullptr};
     // m_is_leader to decide if timer need to do packing units and then start consensus
     bool                                     m_is_leader{false};
