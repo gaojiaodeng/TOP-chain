@@ -54,7 +54,7 @@ namespace top
             enum_block_plugin_idle_timeout_ms   = 10*60*1000,  //idle duration for plugin
             enum_state_plugin_idle_timeout_ms   = 10*60*1000,  //idle duration for plugin
 #else
-            enum_timer_check_interval           = 10000,  //check every 10 seconds    
+            enum_timer_check_interval           = 1000,  //check every 1 seconds    
             enum_account_idle_timeout_ms        = 60*60*1000, //account change to idle status if not access within 60 minutes
             enum_block_plugin_idle_timeout_ms   = 60*60*1000,  //idle duration for plugin  60minutes
             enum_state_plugin_idle_timeout_ms   = 60*60*1000,  //idle duration for plugin  60minutes

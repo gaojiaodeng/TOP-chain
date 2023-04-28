@@ -68,6 +68,7 @@ namespace top
             virtual bool                    update_meta(){return false;}//update meta into cache
             //note:save_data must be protected by table' lock before call save_data
             virtual bool                    save_data()  {return false;}; //give plugin a chance to save blocks/tx to db
+            virtual bool                    clear_exmemory() {return false;}
         protected:
             void                    stop(); //mark idle flag
             virtual bool            close(bool force_async = true) override;

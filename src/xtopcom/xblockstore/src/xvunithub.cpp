@@ -1054,10 +1054,11 @@ namespace top
                 return ret;
             }
             ret = store_txs_to_db(target_account, index_ptr);
-            if (nullptr != index_ptr->get_this_block()) {
-                // release excontainer memory after storing units and txs
-                index_ptr->get_this_block()->set_excontainer(nullptr);
-            }
+            // if (nullptr != index_ptr->get_this_block()) {
+            //     // release excontainer memory after storing units and txs
+            //     xinfo("xvblockstore_impl::on_block_committed tps_key free excontainer.%s",index_ptr->dump().c_str());
+            //     index_ptr->get_this_block()->set_excontainer(nullptr);
+            // }
             return ret;
         }
 

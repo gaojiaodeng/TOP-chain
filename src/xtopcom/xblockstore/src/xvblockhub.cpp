@@ -1681,10 +1681,30 @@ namespace top
                     }
                     xdbg_info("xblockacct_t::on_block_committed,done block=%s",index_ptr->dump().c_str());
                 }
+                if (nullptr != index_ptr->get_this_block()) {
+                    auto block = index_ptr->get_this_block();
+                    block->add_ref();
+                    base::xvblock_ptr_t block_ptr;
+                    block_ptr.attach(block);
+                    m_committed_blocks.push_back(block_ptr);
+                }
             }
             //fully connect to geneis block or last full-block here
             full_connect_to(index_ptr);
 
+            return true;
+        }
+
+        bool xblockacct_t::clear_exmemory() {
+            uint32_t size = m_committed_blocks.size();
+            if (size <= 1) {
+                return false;
+            }
+            for (uint32_t i = 0; i < size - 1; i++) {
+                xdbg("xblockacct_t::clear_exmemory block:%s", m_committed_blocks[i]->dump().c_str());
+                m_committed_blocks[i]->set_excontainer(nullptr);
+            }
+            m_committed_blocks.erase(m_committed_blocks.begin(), m_committed_blocks.begin() + size - 1);
             return true;
         }
 

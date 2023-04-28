@@ -1050,6 +1050,15 @@ namespace top
         
         bool   xvtable_t::on_timer_for_plugins(const int32_t thread_id,const int64_t timer_id,const int64_t current_time_ms,const int32_t start_timeout_ms)
         {
+            for (auto & monitor_plugin : m_monitor_plugins) {
+                xvactplugin_t* plugin = monitor_plugin.second;
+                if (plugin != nullptr) {
+                    m_lock.lock();
+                    plugin->clear_exmemory();
+                    m_lock.unlock();
+                }
+            }
+
             std::deque<xvactplugin_t*> _remonitor_list;
             
             int   expired_items_count = 0;
