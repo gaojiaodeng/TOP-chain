@@ -1037,7 +1037,7 @@ namespace top
             if(nullptr == index_ptr)
                 return false;
 
-            xinfo("xvblockstore_impl::on_block_committed tps_key enter.%s",index_ptr->dump().c_str());
+            xinfo("xvblockstore_impl::on_block_committed tps_key enter.%s,cert_height=%llu",index_ptr->dump().c_str(), index_ptr->get_height() + 2);
             if(false == index_ptr->check_block_flag(base::enum_xvblock_flag_committed)) {
                 xassert(false);
                 return false;

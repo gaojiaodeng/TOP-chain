@@ -469,15 +469,14 @@ xtablestate_ext_ptr_t xstatestore_executor_t::write_table_all_states(base::xvblo
     if (current_block->get_block_class() != base::enum_xvblock_class_nil) {
         if (!tablestate_store->get_state_root().empty()) {
             auto const mpt = tablestate_store->get_state_mpt();
+            // mpt commit consume much time
             mpt->commit(ec);
             if (ec) {
                 xerror("xstatestore_executor_t::write_table_all_states fail-write mpt,block:%s.ec=%s", current_block->dump().c_str(),ec.message().c_str());
                 return nullptr;
             }
-            xinfo("xstatestore_executor_t::write_table_all_states tps_key mpt_root=%s.block=%s", tablestate_store->get_state_root().hex().c_str(), current_block->dump().c_str());
-
             if (!base::xvchain_t::instance().need_store_units(m_table_vaddr.get_zone_index())) {
-                // only state aware node need to push pending pruned data into trie db (memory db)
+                // only state aware node need to push pending pruned data into trie db (memory db) time consume very little.
                 mpt->prune(ec);
                 if (ec) {
                     xwarn("mpt->prune(ec) failed. category %s errc %d msg %s", ec.category().name(), ec.value(), ec.message().c_str());
