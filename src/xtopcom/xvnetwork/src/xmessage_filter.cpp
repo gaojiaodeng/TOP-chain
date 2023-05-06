@@ -852,7 +852,8 @@ bool xtop_message_filter_recver_is_validator::filter_sender_from_associated_audi
         }
 
         if (recver.account_address().has_value()) {
-            auto const & validator_group = m_election_data_accessor->group_element_by_logic_time(recver.group_address(), vnetwork_message.logic_time(), ec);
+            // auto const & validator_group = m_election_data_accessor->group_element_by_logic_time(recver.group_address(), vnetwork_message.logic_time(), ec);
+            auto const & validator_group = m_election_data_accessor->group_element(recver.group_address(), recver.logic_epoch(), ec);
             if (ec) {
                 xinfo("[vnetwork][message_filter] hash: %" PRIx64 ", network %" PRIu32 " node %s receives msg sent to %s from %s. ignored. error: %s",
                         vnetwork_message.hash(),

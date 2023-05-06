@@ -54,8 +54,13 @@ bool xworkpool_dispatcher::dispatch(base::xworkerpool_t * pool, base::xcspdu_t *
     // xunit_dbg("[xunitservice] dispatch table id %d, packer %p", table_id, packer);
     if (packer != nullptr) {
         auto packer_xip = packer->get_xip2_addr();
-        if (is_xip2_equal(packer_xip, xip_to) && packer->get_account() == pdu->get_block_account()) {
-            xunit_dbg("xworkpool_dispatcher::dispatch succ.pdu=%s,at_node:%s,packer=%p", pdu->dump().c_str(), xcons_utl::xip_to_hex(packer_xip).c_str(), packer);
+        bool xip_match = is_xip2_equal(packer_xip, xip_to);
+        if (!xip_match) {
+            auto new_packer_xip = packer->get_new_xip();
+            xip_match = is_xip2_equal(new_packer_xip, xip_to);
+        }
+        if (xip_match && packer->get_account() == pdu->get_block_account()) {
+            xunit_dbg("xworkpool_dispatcher::dispatch succ.pdu=%s,at_node:%s,packer=%p", pdu->dump().c_str(), xcons_utl::xip_to_hex(xip_to).c_str(), packer);
             return async_dispatch(pdu, xip_from, xip_to, packer) == 0;
         } else {
             xunit_warn("xworkpool_dispatcher::dispatch fail. pdu=%s,table id %d failed packer %p with invalid xip to: %s vs packer: %s, account %s",
@@ -138,6 +143,7 @@ bool xworkpool_dispatcher::start(const xvip2_t & xip, const common::xlogic_time_
 
 bool xworkpool_dispatcher::fade(const xvip2_t & xip) {
     xunit_info("xworkpool_dispatcher::fade %s %p", xcons_utl::xip_to_hex(xip).c_str(), this);
+#if 0
     auto election_face = m_para->get_resources()->get_election();
     auto elect_face = election_face->get_election_cache_face();
     if (elect_face != nullptr) {
@@ -174,6 +180,7 @@ bool xworkpool_dispatcher::fade(const xvip2_t & xip) {
         }
         return true;
     }
+#endif
     return false;
 }
 
@@ -238,9 +245,9 @@ bool xworkpool_dispatcher::subscribe(const std::vector<base::xtable_index_t> & t
     if (!reset_packers.empty()) {
         for (auto packer_ptr : reset_packers) {
             xbatch_packer * packer = packer_ptr.get();
-            auto async_reset = [xip](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
+            auto async_reset = [xip, start_time](base::xcall_t & call, const int32_t cur_thread_id, const uint64_t timenow_ms) -> bool {
                 auto packer = dynamic_cast<xbatch_packer *>(call.get_param1().get_object());
-                packer->reset_xip_addr(xip);
+                packer->reset_xip_addr(xip, start_time);
                 return true;
             };
             base::xcall_t asyn_call(async_reset, packer_ptr.get());

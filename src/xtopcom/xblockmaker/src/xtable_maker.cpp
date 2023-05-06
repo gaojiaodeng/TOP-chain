@@ -247,8 +247,12 @@ void xtable_maker_t::make_account_unit_and_index(bool is_leader, const data::xbl
 
         lighttable_para.set_unit(unit_result.unitblock);
         lighttable_para.set_accountindex(unit_result.unitblock->get_account(), unit_result.accountindex);
-        xinfo("xtable_maker_t::make_account_unit_and_index succ-make unit.is_leader=%d,%s,unit=%s,index=%s",
-            is_leader, cs_para.dump().c_str(), unit_result.unitblock->dump().c_str(),unit_result.accountindex.dump().c_str());
+        if (is_leader) {
+            xinfo("xtable_maker_t::make_account_unit_and_index leader succ-make unit.%s,account=%s,index=%s",
+                  cs_para.dump().c_str(),
+                  unit_result.unitblock->get_account().c_str(),
+                  unit_result.accountindex.dump().c_str());
+        }
     }
 
     make_genesis_account_index(is_leader, cs_para, statectx_ptr, lighttable_para, ec);

@@ -62,7 +62,7 @@ void xshard_rpc_handler::on_message(const xvnode_address_t & edge_sender, xmessa
     int64_t in, out;
     int32_t queue_size = m_thread->count_calls(in, out);
     if (queue_size >= max_shard_rpc_mailbox_num) {
-        xkinfo_rpc("xshard_rpc_handler::on_message shard rpc mailbox is full:%d", queue_size);
+        xdbg_rpc("xshard_rpc_handler::on_message shard rpc mailbox is full:%d", queue_size);
         XMETRICS_GAUGE(metrics::mailbox_rpc_validator_total, 0);
         return;
     }

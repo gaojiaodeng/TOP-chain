@@ -57,11 +57,12 @@ public:
     // return specific error code(enum_xconsensus_result_code) to let caller know reason
     virtual int  verify_proposal(base::xvblock_t * proposal_block, base::xvqcert_t * bind_clock_cert, xcsobject_t * _from_child) override;
 
-    virtual bool reset_xip_addr(const xvip2_t & new_addr);
+    virtual bool reset_xip_addr(const xvip2_t & new_addr, common::xlogic_time_t start_time);
     virtual bool set_fade_xip_addr(const xvip2_t & new_addr);
     virtual bool on_proposal_finish(const base::xvevent_t & event, xcsobject_t* from_child, const int32_t cur_thread_id, const uint64_t timenow_ms);
     virtual bool on_replicate_finish(const base::xvevent_t & event,xcsobject_t* from_child,const int32_t cur_thread_id,const uint64_t timenow_ms);
     virtual bool on_consensus_commit(const base::xvevent_t & event, xcsobject_t* from_child, const int32_t cur_thread_id, const uint64_t timenow_ms);
+    virtual const xvip2_t & get_new_xip();
 protected:
     virtual bool on_view_fire(const base::xvevent_t &event, xcsobject_t *from_parent, const int32_t cur_thread_id, const uint64_t timenow_ms);
 
@@ -101,12 +102,18 @@ private:
     virtual bool process_msg(const xvip2_t & from_addr, const xvip2_t & to_addr, const base::xcspdu_t & packet, int32_t cur_thread_id, uint64_t timenow_ms);
     virtual int veriry_proposal_by_preproposal_block(base::xvblock_t * proposal_block);
     bool check_for_view_fire(base::xvblock_t * cert_block, uint64_t viewid, uint64_t clock);
+    void enable_new_xip_leader(uint64_t cur_clock);
+    void enable_new_xip_backup(const xvip2_t & to_xip);
+    void enable_new_xip(bool leader);
+    bool check_is_leader(uint64_t viewid, uint64_t cur_clock, base::xvblock_t * _cert_block);
+    xvip2_t get_new_xip(uint64_t cur_clock);
 
 private:
     base::xtable_index_t                     m_tableid;
     volatile uint64_t                        m_last_view_id;
     std::shared_ptr<xcons_service_para_face> m_para;
     std::shared_ptr<xproposal_maker_face>    m_proposal_maker;
+    common::xlogic_time_t                    m_start_time;
     base::xtimer_t*                          m_raw_timer{nullptr};
     // m_is_leader to decide if timer need to do packing units and then start consensus
     bool                                     m_is_leader{false};
@@ -119,6 +126,7 @@ private:
     xvip2_t                                  m_faded_xip2{};
     // record last xip in case of consensus success but leader xip changed.
     xvip2_t                                  m_last_xip2{};
+    xvip2_t                                  m_new_xip2{};
     common::xtable_address_t                 m_table_addr;
     xpack_strategy_t                         m_pack_strategy;
 #ifdef ENABLE_METRICS
