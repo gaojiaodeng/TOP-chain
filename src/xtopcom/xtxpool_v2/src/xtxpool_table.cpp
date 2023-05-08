@@ -279,10 +279,13 @@ void xtxpool_table_t::deal_commit_table_block(data::xblock_t * table_block, bool
 
     std::vector<xtx_id_height_info> tx_id_height_infos;
     std::vector<xraw_tx_info> raw_txs;
-    std::vector<update_id_state_para> update_id_state_para_vec;
 
-    auto f = [this, &update_id_state_para_vec, &table_block, &raw_txs, &update_txmgr, &tx_id_height_infos](const base::xvaction_t & _action) {
-        data::xlightunit_action_t txaction(_action);
+    std::vector<update_id_state_para> update_id_state_para_vec;
+    auto tx_actions = data::xblockextract_t::unpack_txactions(table_block);
+
+    xdbg("xtxpool_table_t::deal_commit_table_block table block:%s", table_block->dump().c_str());
+
+    for (auto & txaction : tx_actions) {
         bool need_confirm = !txaction.get_not_need_confirm();
         if (need_confirm && txaction.get_tx_subtype() == base::enum_transaction_subtype_send && !txaction.get_inner_table_flag()) {
             data::xtransaction_ptr_t _rawtx = table_block->query_raw_transaction(txaction.get_tx_hash());
@@ -323,18 +326,6 @@ void xtxpool_table_t::deal_commit_table_block(data::xblock_t * table_block, bool
             } else {
                 xdbg("xtxpool_table_t::deal_commit_table_block no id height tx=%s", base::xstring_utl::to_hex(txaction.get_org_tx_hash()).c_str());
             }
-        }
-    };
-    
-    xdbg("xtxpool_table_t::deal_commit_table_block table block:%s", table_block->dump().c_str());
-    auto tx_action_cache = m_tx_action_cache.get_cache(table_block);
-    if (tx_action_cache != nullptr) {
-        xdbg("xtxpool_table_t::deal_commit_table_block use txaction block:%s", table_block->dump().c_str());
-        tx_action_cache->loop_actions(f);
-    } else {
-        std::vector<data::xlightunit_action_t> tx_actions = data::xblockextract_t::unpack_txactions(table_block);
-        for (auto & action : tx_actions) {
-            f(action);
         }
     }
 

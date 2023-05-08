@@ -111,7 +111,7 @@ public:
     xtable_mpt_container(statectx::xstatectx_face_ptr_t const & _ctx,
                          std::shared_ptr<std::vector<data::xlightunit_tx_info_ptr_t>> actions)
       : m_statectx(_ctx) {
-        m_input_actions_cache = std::make_shared<xtable_input_actions_cache>(actions);
+        // m_input_actions_cache = std::make_shared<xtable_input_actions_cache>(actions);
     }
     virtual void commit(base::xvblock_t* current_block) override {
         m_statectx->do_commit(current_block);
