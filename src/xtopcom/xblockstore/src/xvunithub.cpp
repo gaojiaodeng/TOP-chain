@@ -206,10 +206,10 @@ namespace top
             }
             
             uint64_t timeout_for_block_plugin = base::enum_block_plugin_idle_timeout_ms;
-            if(auto_account_ptr->is_table_address())
-            {
-                timeout_for_block_plugin = (uint32_t)-1; //table object keep plugin forever
-            }
+            // if(auto_account_ptr->is_table_address())
+            // {
+            //     timeout_for_block_plugin = (uint32_t)-1; //table object keep plugin forever
+            // }
             
             #ifdef __new_plugin_by_lambda__
             #else
