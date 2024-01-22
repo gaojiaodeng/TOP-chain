@@ -82,29 +82,36 @@ void xunitbuilder_t::make_unitblock_and_unitstate(data::xaccountstate_ptr_t cons
     std::shared_ptr<data::xunit_build2_t> vblockmaker = std::make_shared<data::xunit_build2_t>(
         unitstate->get_bstate()->get_account(), unitstate->height(), unitstate->get_bstate()->get_last_block_hash(), is_full_unit, cs_para);    
 
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 1");
     // update final unitstate information
     unitstate->get_bstate()->update_final_block_info(vblockmaker->get_header(), cs_para.get_viewid());
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 2");
 
     // make bodypara and create unitblock body
     data::xunit_block_para_t bodypara;
     std::string binlog = unitstate->take_binlog();
     bodypara.set_binlog(binlog);
     assert(!binlog.empty());
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 3");
   
     base::enum_xaccountindex_version_t _accountindex_version;
     std::string snapshot;    
     if (false == chain_fork::xutility_t::is_forked(fork_points::v11200_block_fork_point, cs_para.get_clock())) {
         snapshot = unitstate->take_snapshot();
-        _accountindex_version = base::enum_xaccountindex_version_snapshot_hash;   
+        _accountindex_version = base::enum_xaccountindex_version_snapshot_hash;  
+        xdbg("xunitbuilder_t::make_unitblock_and_unitstate 4"); 
     } else {
         unitstate->get_bstate()->serialize_to_string(snapshot);
         result.unitstate_bin = snapshot;// before fork, it is empty    
         _accountindex_version = base::enum_xaccountindex_version_state_hash;
+        xdbg("xunitbuilder_t::make_unitblock_and_unitstate 5"); 
     }
     assert(!snapshot.empty());
     std::string snapshot_hash = vblockmaker->get_qcert()->hash(snapshot);
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 6"); 
     bodypara.set_fullstate_bin(snapshot);
     bodypara.set_fullstate_bin_hash(snapshot_hash);
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 7");
 
     vblockmaker->create_block_body(bodypara);
     base::xvblock_ptr_t proposal_block = vblockmaker->build_new_block();
@@ -118,6 +125,7 @@ void xunitbuilder_t::make_unitblock_and_unitstate(data::xaccountstate_ptr_t cons
     result.unitblock = proposal_block;
     result.unitstate = unitstate;
     result.accountindex = base::xaccount_index_t(_accountindex_version, proposal_block->get_height(), proposal_block->get_block_hash(), bodypara.get_fullstate_bin_hash(), accountstate->get_tx_nonce());
+    xdbg("xunitbuilder_t::make_unitblock_and_unitstate 8");
     accountstate->update_account_index(result.accountindex);
     xdbg("xunitbuilder_t::make_unitblock_and_unitstate cs_para=%s,unit=%s,binlog=%zu,snapshot=%zu",
         cs_para.dump().c_str(), result.unitblock->dump().c_str(),binlog.size(),snapshot.size());
